@@ -44,7 +44,6 @@ endif
 ### Launch the dynamic library auto-loader
 .PHONY: launch
 launch: $(TARGET) lib
-	@gedit lib.c &
 	@./$(TARGET)
 
 ################################################################################

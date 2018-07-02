@@ -1,9 +1,8 @@
 #include <iostream>
 #include <glibmm/module.h>
 
-static const std::string c_livelib = "livecode.dylib"; // .so or .dylib or .dll
+static const std::string c_livelib = "./liblivecode"; // .so or .dylib or .dll
 static const std::string c_livefunc = "helloworld";
-
 typedef void (*fptr)();
 
 int main()
@@ -15,7 +14,7 @@ int main()
       bool found = module.get_symbol(c_livefunc, func);
       std::cout << "found the function "
                 << c_livefunc << "() ? "
-                << found << std::endl;
+                << (found ? "yes" : "no") << std::endl;
 
       if (found)
         {
@@ -25,10 +24,8 @@ int main()
     }
   else
     {
-      std::cout
-        << "Error: No dice loading '"
-        << c_livefunc << "() '"
-        << "'" << std::endl;
+      std::cerr
+        << "Error when loading '" << c_livelib << "'" << std::endl;
     }
 
   return 0;
