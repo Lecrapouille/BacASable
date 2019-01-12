@@ -54,6 +54,7 @@ Code source:
 * 02_MVP: 2nd version of Model-View-Presenter: with observers. This version is not good because it's the Presenter job to modify the model and tells the View to refresh the display of the model. In this example the Model only notifies the Presenter but we can "violate" the design by making the View to inherit from 
 * 03_MVC: Model-View-Controller based on http://www.laputan.org/pub/papers/POSA-MVC.pdf
 * 04_MVP-gtk: a GTK+ implementation of the MVP using contracts and multiple views on the same Model. I'm not sure if my design is correct where Model is an Observable in the aim to prevent all Presents that it's data changed. But this how pygtkmvc is implemented.
+* 05_MVP-gtk: Try to add a Proxy class to encapsulate the Student with an Observable flavor.
 
 Links:
 * http://www.laputan.org/pub/papers/POSA-MVC.pdf
