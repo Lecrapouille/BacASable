@@ -26,8 +26,8 @@ Here are explanations:
 * A Presenter is linked to a single View by a Contract. 
 * A Presenter is linked to one or several Models.
 * A Model is only modified by a Presenter. The Presenter asks the View to refresh the display of the Model.
-* A Contract is 
-* Pro: easy to implement and to unit test. Use mock of the Contract for unit tests. The View has no logic other than displaying informations and sending signals to the Presenter. The Presenter connects signals of the view to its slots.
+* A Contract describes the communication between view and presenter with interface classes (with pure virtual methods).
+* Pro: easier to implement than MVC. The View has no logic other than displaying informations and sending signals to the Presenter. The Presenter connects signals of the view to its methods. Therefore it's easy to unit test: you simply mock the Contract.
 * Drawback: We have to create as many as Presenters than Views.
 
 Here is the interaction diagram for the MVC:
