@@ -12,6 +12,10 @@ This allows to mimic the C langage as an interprete langage.
 Defining a MaxPlus class in C++ and Julia:
 https://en.wikipedia.org/wiki/Max-plus_algebra
 
+## Plant Growth
+
+A studient project for [ScicosLab](http://www.scicoslab.org/).
+
 ## MVC-MVP
 
 Learning how to implement a Model-View-Controller (MVC) and a Model-View-Presenter (MVP) in C++. I'm not sure if the design I made is the correct one, so take care (anyway I found no C++ solution for MVP on github, google)! In these examples, I just made the simplest model possible: a Student class with its a single member variable : its name.
