@@ -1,5 +1,7 @@
 #!/bin/bash
 
+g++ -W -Wall -Wextra --std=c++11 00_MVP.cpp -o 00_MVP
+g++ -W -Wall -Wextra --std=c++11 00_MVP_bis.cpp -o 00_MVP_bis
 g++ -W -Wall -Wextra --std=c++11 01_MVP.cpp -o 01_MVP
 g++ -W -Wall -Wextra --std=c++11 02_MVP.cpp -o 02_MVP
 g++ -W -Wall -Wextra --std=c++14 03_MVC.cpp -o 03_MVC

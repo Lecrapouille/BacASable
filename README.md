@@ -1,24 +1,48 @@
 # BacASable
 
-Share micro projects that I made for learning some techniques.
+Share micro projects that I made for learning some techniques that can be used
+for biggest projects.
 
 ## AutoLoadLib
 
-Interactive Programming in C: edit your C code at runtime, see your changes on your application without restarting it.
-This allows to mimic the C langage as an interprete langage.
+Interactive Programming in C: edit your C code at run-time, see your changes on
+your application without restarting it.  This allows to mimic the C language as
+an interpreted language.
 
 ## Max-Plus
 
-Defining a MaxPlus class in C++ and Julia:
-https://en.wikipedia.org/wiki/Max-plus_algebra
+Defining a Max-Plus class in C++ and Julia for Max-Plus algebra.
+More information about this algebra, see https://en.wikipedia.org/wiki/Max-plus_algebra
 
 ## Plant Growth
 
-A studient project for [ScicosLab](http://www.scicoslab.org/).
+A student project for generating 3D plants for [ScicosLab](http://www.scicoslab.org/)
+If you are interested by simulation of plant growth see :
+* (fr) http://www.linneenne-lyon.org/depot1/14367.pdf
+* (en) https://hal.inria.fr/file/index/docid/71706/filename/RR-4877.pdf
 
 ## MVC-MVP
 
-Learning how to implement a Model-View-Controller (MVC) and a Model-View-Presenter (MVP) in C++. I'm not sure if the design I made is the correct one, so take care (anyway I found no C++ solution for MVP on github, google)! In these examples, I just made the simplest model possible: a Student class with its a single member variable : its name.
+Learning how to implement design pattern Model-View-Controller (MVC) and a
+Model-View-Presenter (MVP) in C++.  This pattern is used for decoupling classes
+in Graphical User Interface (GUI) like GTK+ or QT. Model is class managing your
+data.  View is the class managing buttons and widgets of the Human-Machine
+Interface (HMI). Controller and Presenter are mediator class between Model and
+View.
+
+By "more decoupling" that means the library managing the view can be replaced by
+another and therefore Controller/Presenter and Model are View agnostic. More
+decoupling means more testable with unit tests.
+
+There are many documents on internet explaining these two patterns but I did not
+found C++ ultra basic implementation for MVC and particularly for MVP on GitHub
+(MVP is a purely Android pattern) so I'm not 100% sure if the code I made is the
+correct one, so take care ! The difficulty with these patterns is to break the
+cyclic class relation (A knows B and B knows A). In these examples, I just made
+the simplest model possible: a Student class with its a single member variable :
+its name. The View is emulated by your console so no additional libraries are
+needed for compiling these examples. A simple `g++ -W -Wall -Wextra --std=c++11
+*.cpp -o prog` is enough.
 
 Here is the interaction diagram for the MVP:
 
@@ -27,12 +51,30 @@ View <--Contract--> Presenter ---> Model
 ```
 
 Here are explanations:
-* A Presenter is linked to a single View by a Contract. 
-* A Presenter is linked to one or several Models.
-* A Model is only modified by a Presenter. The Presenter asks the View to refresh the display of the Model.
-* A Contract describes the communication between view and presenter with interface classes (with pure virtual methods).
-* Pro: easier to implement than MVC. The View has no logic other than displaying informations and sending signals to the Presenter. The Presenter connects signals of the view to its methods. Therefore it's easy to unit test: you simply mock the Contract.
-* Drawback: We have to create as many as Presenters than Views.
+* A Presenter class is linked to a single View class through a Contract class.
+
+* A Contract describes the communication between view and presenter with
+  interface classes (with pure virtual methods). The interface for the Presenter
+  is optional.
+
+* The Contract is here for breaking the cyclic class relation by containing
+  abstract/interface classes for View and Presenter.
+
+* A Presenter is linked to a single Model.
+
+* The View is passive in the way it only manages widgets, buttons and
+  display. It knows nothing about the model.
+
+* A Model is only modified by the Presenter. The Presenter updates the Model
+  when the view is updated. The Presenter asks the view to be refreshed when the
+  model has been modified by passing to it values of the model.
+
+Advantage/disadvantage:
+* Pro: easier to unit test than MVC. The View has no logic other than displaying
+  information.
+
+* Drawback: We have to create as many as Presenters than needed Views. Relation
+  is 1-to-1.
 
 Here is the interaction diagram for the MVC:
 
@@ -44,21 +86,54 @@ View <----> Controler <--> Model
 ```
 
 Here are explanations:
-* The Controler updates the Model
-* The view, through user actions, ask the Controller to update the Model.
+* The Controller updates the Model
+
+* The View, through user actions, ask the Controller to update the Model.
+
 * Once changed the Model notifies the Controller and/or the View.
-* The Controler can update the View.
+
+* The Controller can update the View.
+
 * The View can listen Model notifications.
-* Notifications are made with a Observer/Observable pattern. A Model is an Observable, a Controler is an Observer, the View can be an Observer.
-* Thanks to the Observer pattern, a single Controller is enough to serve as mediator between multiple Models and multiple Views.
-* Drawback: Classes are strongly inter-coupled: this is not pleasant to implement it need forward declarations, and pointers: the class View knows Controller and View, the class Controller knows a View and a Model. 
+
+* Notifications are made with a Observer/Observable pattern. A Model is an
+  Observable, a Controller is an Observer, the View can be an Observer.
+
+* Thanks to the Observer pattern, a single Controller is enough to serve as
+  mediator between multiple Models and multiple Views.
+
+Advantage/disadvantage:
+* Drawback: Classes are strongly inter-coupled: this is not pleasant to
+  implement it need forward declarations, and pointers: the class View knows
+  Controller and View, the class Controller knows a View and a Model.
+
+* More difficult to unit-tests because of the coupling.
 
 Code source:
-* 01_MVP: 1st version of Model-View-Presenter: In this version I did not write Contract between the Prensenter and the View.
-* 02_MVP: 2nd version of Model-View-Presenter: with observers. This version is not good because it's the Presenter job to modify the model and tells the View to refresh the display of the model. In this example the Model only notifies the Presenter but we can "violate" the design by making the View to inherit from 
+* 00_MVP: classic version of Model-View-Presenter inspired by Android tutorial
+  on MVP. Here Contract class is directly the Presenter class.
+
+* 00_MVP_bis: same than 00_MVP but with a Contract class.
+
+* 01_MVP: modified version of Model-View-Presenter: In this version I did not
+  write Contract between the Presenter and the View. No interface classes not
+  need of allocation.
+
+* 02_MVP: 2nd modified version of Model-View-Presenter: I added observers. This
+  version is not good because it's the Presenter job to modify the model and
+  tells the View to refresh the display of the model. In this example the Model
+  only notifies the Presenter but we can "violate" the design by making the View
+  to inherit from.
+
 * 03_MVC: Model-View-Controller based on http://www.laputan.org/pub/papers/POSA-MVC.pdf
-* 04_MVP-gtk: a GTK+ implementation of the MVP using contracts and multiple views on the same Model. I'm not sure if my design is correct where Model is an Observable in the aim to prevent all Presents that it's data changed. But this how pygtkmvc is implemented.
-* 05_MVP-gtk: Try to add a Proxy class to encapsulate the Student with an Observable flavor.
+
+* 04_MVP-gtk: a GTK+ implementation of the MVP using contracts and multiple
+  views on the same Model. I'm not sure if my design is correct where Model is
+  an Observable in the aim to prevent all Presents that it's data changed. But
+  this how pygtkmvc is implemented.
+
+* 05_MVP-gtk: Try to add a Proxy class to encapsulate the Student with an
+  Observable flavor.
 
 Links:
 * http://www.laputan.org/pub/papers/POSA-MVC.pdf
