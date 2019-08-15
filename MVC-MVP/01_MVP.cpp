@@ -3,20 +3,22 @@
 //--------------------------------------------------------------
 //! \file My personal implementation of the Model-View-Presenter.
 //! Contrary to Java, here, the Presenter and View do not interact
-//! together throw an common interface class.
+//! together throw an Contract interface class.
 //--------------------------------------------------------------
 
 //--------------------------------------------------------------
-//! \brief Aka Model
+//! \brief Aka Model only modifiable by the Presenter. The View
+//! is not supposed to know this class but, here, it used it in
+//! read-only mode.
 //--------------------------------------------------------------
 class Student
 {
 public:
 
    Student(std::string const& name) : m_name(name) { }
-   // Getter: for the display of the View
+   //! \brief Getter
    std::string const& name() const { return m_name; }
-   // Setter: when the View edits the model
+   //! \brief Setter
    void name(std::string const& name) { m_name = name; }
 
 private:
