@@ -4,6 +4,9 @@
 #include <algorithm> // for std::max
 #include <iostream>
 #include <cassert>
+#include <limits>
+
+#include "ThirdPart/Matrix.tpp"
 
 template<class T>
 class MaxPlus
@@ -31,21 +34,29 @@ public:
   T val;
 };
 
-using fMaxPlus = MaxPlus<float>;
+template<> MaxPlus<float>  zero<MaxPlus<float>>()  { return std::numeric_limits<float>::infinity(); }
+template<> MaxPlus<double> zero<MaxPlus<double>>() { return std::numeric_limits<double>::infinity(); }
+template<> MaxPlus<int>    zero<MaxPlus<int>>()    { return std::numeric_limits<int>::min(); }
+template<> MaxPlus<float>  one<MaxPlus<float>>()   { return 0; }
+template<> MaxPlus<double> one<MaxPlus<double>>()  { return 0; }
+template<> MaxPlus<int>    one<MaxPlus<int>>()     { return 0; }
 
-inline std::ostream& operator<<(std::ostream& os, fMaxPlus const& m)
+inline std::ostream& operator<<(std::ostream& os, MaxPlus<float> const& m)
 {
   std::cout << m.val;
   return os;
 }
 
-
-#include "ThirdPart/Matrix.tpp"
+inline std::ostream& operator<<(std::ostream& os, MaxPlus<int> const& m)
+{
+  std::cout << m.val;
+  return os;
+}
 
 int main()
 {
-  fMaxPlus a(3.0f);
-  fMaxPlus b(5.0f);
+  MaxPlus<float> a(3.0f);
+  MaxPlus<float> b(5.0f);
 
   assert(a == (a + a));
   assert(6.0f == (a * a));
@@ -55,16 +66,22 @@ int main()
   assert(0.0f == (b / b));
   assert(0.0f == (b - b));
 
-  fMaxPlus inf(std::numeric_limits<float>::infinity());
-  Matrix<fMaxPlus, 2u, 2u> A = {4.0f, 3.0f, 7.0f, -inf};
+  MaxPlus<float> inf(std::numeric_limits<float>::infinity());
+  Matrix<MaxPlus<float>, 2u, 2u> A = {4.0f, 3.0f, 7.0f, -inf};
   //assert(A, (A + A)); // FIXME bug in Matrix.tpp
   std::cout << A <<std::endl;
   std::cout << (A + A) << std::endl;
 
-  Matrix<fMaxPlus, 2u, 2u> ResMul = {10.0f, 7.0f, 11.0f, 10.0f};
+  Matrix<MaxPlus<float>, 2u, 2u> ResMul = {10.0f, 7.0f, 11.0f, 10.0f};
   //assert(ResMul, (A + A)); // FIXME bug in Matrix.tpp
   std::cout << ResMul <<std::endl;
   std::cout << (A * A) << std::endl;
+
+  std::cout << "Float Identity matrix" << std::endl;
+  std::cout << Matrix<MaxPlus<float>, 2u, 2u>(matrix::Identity) << std::endl;
+
+  std::cout << "Integer Identity matrix" << std::endl;
+  std::cout << Matrix<MaxPlus<int>, 2u, 2u>(matrix::Identity) << std::endl;
 
   return 0;
 }

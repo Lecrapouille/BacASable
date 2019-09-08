@@ -18,14 +18,15 @@
 // along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
 //=====================================================================
 
-#ifndef MATHS_HPP_
-#  define MATHS_HPP_
+#ifndef MATHS_HPP
+#  define MATHS_HPP
 
 #  include <cmath>
 #  include <limits>
 #  include <cassert>
 #  include <iostream>
 #  include <cstdint>
+#  include "ZeroOne.tpp"
 
 // TODO ajouter un fast_cos
 

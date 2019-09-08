@@ -19,8 +19,8 @@
 // along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
 //=====================================================================
 
-#ifndef MATRIX_TPP_
-#  define MATRIX_TPP_
+#ifndef MATRIX_TPP
+#  define MATRIX_TPP
 
 // *************************************************************************************************
 // Inspired by https://github.com/Reedbeta/reed-util and its
@@ -60,7 +60,7 @@ public:
     // Zero-fill any remaining elements.
     for (uint32_t i = m; i < rows * cols; ++i)
       {
-        m_data[i] = T(0);
+        m_data[i] = zero<T>();
       }
   }
 
@@ -84,7 +84,7 @@ public:
         uint32_t i = rows * cols;
         while (i--)
           {
-            m_data[i] = (i % (rows + 1U) == 0) ? T(1) : T(0);
+            m_data[i] = (i % (rows + 1U) == 0) ? one<T>() : zero<T>();
           }
         break;
       };
@@ -105,13 +105,13 @@ public:
         // Zero-fill any remaining cols
         for (uint32_t j = c; j < cols; ++j)
           {
-            (*this)[i][j] = T(0);
+            (*this)[i][j] = zero<T>();
           }
       }
     // Zero-fill any remaining rows
     for (uint32_t i = r * cols; i < rows * cols; ++i)
       {
-        m_data[i] = T(0);
+        m_data[i] = zero<T>();
       }
   }
 
@@ -305,10 +305,10 @@ DEFINE_RELATIONAL_OPERATORS(>=)
 template <typename T, uint32_t rows, uint32_t inner, uint32_t cols>
 inline Matrix<T, rows, cols> operator*(Matrix<T, rows, inner> const &a, Matrix<T, inner, cols> const &b)
 {
-  Matrix<T, rows, cols> result(T(0));
+  Matrix<T, rows, cols> result(zero<T>());
   for (uint32_t i = 0U; i < rows; ++i)
     for (uint32_t j = 0U; j < cols; ++j)
-      for (uint32_t k = 0; k < inner; ++k)
+      for (uint32_t k = 0U; k < inner; ++k)
         result[i][j] += a[i][k] * b[k][j];
   return result;
 }
@@ -317,7 +317,7 @@ inline Matrix<T, rows, cols> operator*(Matrix<T, rows, inner> const &a, Matrix<T
 template <typename T, uint32_t rows, uint32_t cols>
 inline Vector<T, rows> operator*(Matrix<T, rows, cols> const &a, Vector<T, cols> const &b)
 {
-  Vector<T, rows> result(T(0));
+  Vector<T, rows> result(zero<T>());
   uint32_t i = rows;
   while (i--)
     {
@@ -332,7 +332,7 @@ inline Vector<T, rows> operator*(Matrix<T, rows, cols> const &a, Vector<T, cols>
 template <typename T, uint32_t rows, uint32_t cols>
 inline Vector<T, cols> operator*(Vector<T, rows> const &a, Matrix<T, rows, cols> const &b)
 {
-  Vector<T, cols> result (T(0));
+  Vector<T, cols> result (zero<T>());
   uint32_t i = rows;
 
   while (i--)
@@ -367,11 +367,11 @@ namespace matrix
   inline void identity(Matrix<T, rows, cols> &a)
   {
     static_assert(rows == cols, "Can't construct identity for a non-square matrix");
-    a *= T(0);
+    a *= zero<T>();
     uint32_t i = rows;
     while (i--)
       {
-        a[i][i] = T(1);
+        a[i][i] = one<T>();
       }
   }
 
@@ -430,7 +430,7 @@ namespace matrix
   {
     static_assert(rows == cols, "Can't compute the trace of a non-square matrix");
 
-    T result = T(0);
+    T result = zero<T>();
     uint32_t i = rows;
 
     while (i--)
@@ -537,8 +537,8 @@ namespace matrix
     uint32_t i, j;
 
     // Set matrices to 0
-    L *= T(0);
-    U *= T(0);
+    L *= zero<T>();
+    U *= zero<T>();
 
     // FIXME: Copy not necessary
     Matrix<T, rows, cols> A(AA);
@@ -567,7 +567,7 @@ namespace matrix
         // -- original code:  if (A[i][i] != 0.0)
         // -- new code which seems to give less good results: if (fabs(A[i][i]) > 0.00001)
         // we cannot use == with floats or double !!!!
-        if (A[i][i] != T(0))
+        if (A[i][i] != zero<T>())
           {
             for (j = i + 1U; j < rows; ++j)
               {
@@ -581,7 +581,7 @@ namespace matrix
       }
     for (i = 0U; i < rows; ++i)
       {
-        L[i][i] = T(1);
+        L[i][i] = one<T>();
         for (j = 0U; j < rows; ++j)
           {
             if (j < i)
