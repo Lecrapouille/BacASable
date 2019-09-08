@@ -19,8 +19,8 @@
 // along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
 //=====================================================================
 
-#ifndef VECTOR_TPP_
-#  define VECTOR_TPP_
+#ifndef VECTOR_TPP
+#  define VECTOR_TPP
 
 // *************************************************************************************************
 // Inspired from https://github.com/Reedbeta/reed-util
@@ -56,7 +56,7 @@
     /* Zero-fill any remaining elements */                              \
     for (uint32_t i = m; i < N; ++i)                                    \
       {                                                                 \
-        m_data[i] = T(0);                                               \
+        m_data[i] = zero<T>();                                          \
       }                                                                 \
   }                                                                     \
                                                                         \
@@ -84,7 +84,7 @@
     /* Zero-fill any remaining elements */                              \
     for (i = m; i < N; ++i)                                             \
       {                                                                 \
-        m_data[i] = T(0);                                               \
+        m_data[i] = zero<T>();                                          \
       }                                                                 \
   }                                                                     \
                                                                         \
@@ -161,13 +161,13 @@ public:
 
 // Predifined vectors
 template <typename T> const Vector<T, 2U> Vector<T, 2U>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::ZERO(T(0));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_SCALE(T(1));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_SCALE(T(-1));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_X(T(1), T(0));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_Y(T(0), T(1));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_X(T(-1), T(0));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_Y(T(0), T(-1));
+template <typename T> const Vector<T, 2U> Vector<T, 2U>::ZERO(zero<T>());
+template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_X(one<T>(), zero<T>());
+template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_Y(zero<T>(), one<T>());
+template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_X(-one<T>(), zero<T>());
+template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>());
 
 // *************************************************************************************************
 //! \brief Specialization for n = 3
@@ -177,14 +177,14 @@ class Vector<T, 3U>
 {
 public:
 
-  Vector(Vector<T, 2U> const &v, const T z = T(0))
+  Vector(Vector<T, 2U> const &v, const T z = zero<T>())
   {
     this->x = v.x;
     this->y = v.y;
     this->z = z;
   }
 
-  Vector(const T x, const T y, const T z = T(0))
+  Vector(const T x, const T y, const T z = zero<T>())
   {
     this->x = x;
     this->y = y;
@@ -215,15 +215,15 @@ public:
 };
 
 template <typename T> const Vector<T, 3U> Vector<T, 3U>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::ZERO(T(0));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_SCALE(T(1));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_SCALE(T(-1));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_X(T(1), T(0), T(0));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_Y(T(0), T(1), T(0));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_Z(T(0), T(0), T(1));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_X(T(-1), T(0), T(0));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_Y(T(0), T(-1), T(0));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_Z(T(0), T(0), T(-1));
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::ZERO(zero<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_X(one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_Y(zero<T>(), one<T>(), zero<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_Z(zero<T>(), zero<T>(), one<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>());
+template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>());
 
 // *************************************************************************************************
 // Specializations for n = 4
@@ -233,7 +233,7 @@ class Vector<T, 4U>
 {
 public:
 
-  Vector(Vector<T, 3U> const &v, const T w = T(0))
+  Vector(Vector<T, 3U> const &v, const T w = zero<T>())
   {
     this->x = v.x;
     this->y = v.y;
@@ -275,17 +275,17 @@ public:
 };
 
 template <typename T> const Vector<T, 4U> Vector<T, 4U>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::ZERO(T(0));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_SCALE(T(1));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_SCALE(T(-1));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_X(T(1), T(0), T(0), T(0));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_Y(T(0), T(1), T(0), T(0));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_Z(T(0), T(0), T(1), T(0));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_W(T(0), T(0), T(0), T(1));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_X(T(-1), T(0), T(0), T(0));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_Y(T(0), T(-1), T(0), T(0));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_Z(T(0), T(0), T(-1), T(0));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(T(0), T(0), T(0), T(-1));
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::ZERO(zero<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_X(one<T>(), zero<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_Y(zero<T>(), one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_Z(zero<T>(), zero<T>(), one<T>(), zero<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_W(zero<T>(), zero<T>(), zero<T>(), one<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>(), zero<T>());
+template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(zero<T>(), zero<T>(), zero<T>(), -one<T>());
 
 // *************************************************************************************************
 // Overloaded math operators
@@ -535,7 +535,7 @@ namespace vector
   {
     // Null vector ?
     if (maths::almostZero(u[0]) || maths::almostZero(v[0]))
-      return T(0);
+      return zero<T>();
 
     const T k = u[0] / v[0];
     for (uint32_t i = 1U; i < n; ++i)
@@ -560,7 +560,7 @@ namespace vector
   bool equivalent(Vector<T, n> const &u, Vector<T, n> const &v)
   {
     T k = collinearity(u, v);
-    return maths::almostEqual(k, T(1));
+    return maths::almostEqual(k, one<T>());
   }
 
   //! \brief Check if three points A, B, C are aligned.
@@ -600,7 +600,7 @@ namespace vector
   template <typename T, uint32_t n>
   T dot(Vector<T, n> const &a, Vector<T, n> const &b)
   {
-    T result(0);
+    T result(zero<T>());
     uint32_t i = n;
 
     while (i--)
@@ -680,16 +680,16 @@ namespace vector
     // Implementation due to Sam Hocevar - see blog post:
     // http://lolengine.net/blog/2013/09/21/picking-orthogonal-Vector-combing-coconuts
     if (maths::abs(a.x) > maths::abs(a.z))
-      return { -a.y, a.x, T(0) };
+      return { -a.y, a.x, zero<T>() };
     else
-      return { T(0), -a.z, a.y };
+      return { zero<T>(), -a.z, a.y };
   }
 
   template <typename T, uint32_t n>
   inline typename std::enable_if<std::numeric_limits<T>::is_integer, bool>::type
   orthogonal(Vector<T, n> const &a, Vector<T, n> const &b)
   {
-    return T(0) == dot(a, b);
+    return zero<T>() == dot(a, b);
   }
 
   template <typename T, uint32_t n>
@@ -709,7 +709,7 @@ namespace vector
     //  lenProduct = 1e-6f;
 
     T f = dot(org, dest) / lenProduct;
-    f = std::min(std::max(f, T(-1)), T(1));
+    f = std::min(std::max(f, -one<T>()), one<T>());
     return std::acos(f) * 180.0 / 3.14159265;
   }
 
