@@ -1,31 +1,11 @@
 // -*- c++ -*- Coloration Syntaxique pour Emacs
-//=====================================================================
-// SimTaDyn: A GIS in a spreadsheet.
-// Copyright 2018 Quentin Quadrat <lecrapouille@gmail.com>
 //
-// This file is part of SimTaDyn.
-//
-// SimTaDyn is free software: you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
-//=====================================================================
+// Inspired from https://github.com/Reedbeta/reed-util
+// and http://www.reedbeta.com/blog/on-vector-math-libraries/
+// and http://www.ogre3d.org
 
 #ifndef MATRIX_TPP
 #  define MATRIX_TPP
-
-// *************************************************************************************************
-// Inspired by https://github.com/Reedbeta/reed-util and its
-// blog http://www.reedbeta.com/blog/on-vector-math-libraries/
-// *************************************************************************************************
 
 #  include "Vector.tpp"
 
@@ -36,7 +16,7 @@ namespace matrix
 };
 
 
-template <typename T, uint32_t rows, uint32_t cols>
+template <typename T, size_t rows, size_t cols>
 class Matrix
 {
 public:
@@ -49,16 +29,16 @@ public:
   //! \brief Constructor with initialization list.
   Matrix(std::initializer_list<T> initList)
   {
-    uint32_t m = std::min(rows * cols, uint32_t(initList.size()));
+    size_t m = std::min(rows * cols, size_t(initList.size()));
     auto iter = initList.begin();
-    for (uint32_t i = 0U; i < m; ++i)
+    for (size_t i = 0_z; i < m; ++i)
       {
         m_data[i] = T(*iter);
         ++iter;
       }
 
     // Zero-fill any remaining elements.
-    for (uint32_t i = m; i < rows * cols; ++i)
+    for (size_t i = m; i < rows * cols; ++i)
       {
         m_data[i] = zero<T>();
       }
@@ -67,7 +47,7 @@ public:
   //! \brief Constructor with an uniform value.
   explicit Matrix(T a)
   {
-    uint32_t i = rows * cols;
+    size_t i = rows * cols;
     while (i--)
       {
         m_data[i] = a;
@@ -77,39 +57,43 @@ public:
   //! \brief Constructor for identity matrix.
   explicit Matrix(const matrix::MatrixType type)
   {
+    size_t i;
+
     switch (type)
       {
       case matrix::Identity:
         static_assert(rows == cols, "Can't construct identity for a non-square matrix");
-        uint32_t i = rows * cols;
+        i = rows * cols;
         while (i--)
           {
-            m_data[i] = (i % (rows + 1U) == 0) ? one<T>() : zero<T>();
+            m_data[i] = (i % (rows + 1_z) == 0) ? one<T>() : zero<T>();
           }
+        break;
+      default:
         break;
       };
   }
 
   //! \brief Constructor by copy.
-  template <typename U, uint32_t rowsOther, uint32_t colsOther>
+  template <typename U, size_t rowsOther, size_t colsOther>
   explicit Matrix(Matrix<U, rowsOther, colsOther> const &m)
   {
-    uint32_t r = std::min(rows, rowsOther);
-    uint32_t c = std::min(cols, colsOther);
-    for (uint32_t i = 0U; i < r; ++i)
+    size_t r = std::min(rows, rowsOther);
+    size_t c = std::min(cols, colsOther);
+    for (size_t i = 0_z; i < r; ++i)
       {
-        for (uint32_t j = 0U; j < c; ++j)
+        for (size_t j = 0_z; j < c; ++j)
           {
             (*this)[i][j] = T(m[i][j]);
           }
         // Zero-fill any remaining cols
-        for (uint32_t j = c; j < cols; ++j)
+        for (size_t j = c; j < cols; ++j)
           {
             (*this)[i][j] = zero<T>();
           }
       }
     // Zero-fill any remaining rows
-    for (uint32_t i = r * cols; i < rows * cols; ++i)
+    for (size_t i = r * cols; i < rows * cols; ++i)
       {
         m_data[i] = zero<T>();
       }
@@ -118,41 +102,53 @@ public:
   //! \brief Return the dimension of the matrix.
   //! \param r (OUT) get the number of rows.
   //! \param c (OUT) get the number of columns.
-  inline void size(uint32_t &r, uint32_t &c)
+  void size(size_t &r, size_t &c)
   {
     r = rows;
     c = cols;
   }
 
   //! \brief Access to the nth row in write mode.
-  inline Vector<T, cols>& operator[](uint32_t i)
+  Vector<T, cols>& operator[](size_t const i)
   {
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
     return reinterpret_cast<Vector<T, cols> &>(m_data[i * cols]);
+#  pragma GCC diagnostic pop
   }
 
   //! \brief Acces to the nth row in read mode.
-  inline const Vector<T, cols>& operator[](uint32_t i) const
+  Vector<T, cols> const& operator[](size_t const i) const
   {
-    return reinterpret_cast<const Vector<T, cols> &>(m_data[i * cols]);
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
+    return reinterpret_cast<Vector<T, cols> const&>(m_data[i * cols]);
+#  pragma GCC diagnostic pop
   }
 
   //! \brief Access to the nth row in write mode.
-  inline Vector<T, cols>& operator[](int i)
+  Vector<T, cols>& operator[](int const i)
   {
-    return reinterpret_cast<Vector<T, cols> &>(m_data[i * cols]);
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
+    return reinterpret_cast<Vector<T, cols> &>(m_data[size_t(i) * cols]);
+#  pragma GCC diagnostic pop
   }
 
   //! \brief Acces to the nth row in read mode.
-  inline const Vector<T, cols>& operator[](int i) const
+  Vector<T, cols> const& operator[](int const i) const
   {
-    return reinterpret_cast<const Vector<T, cols> &>(m_data[i * cols]);
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
+    return reinterpret_cast<Vector<T, cols> const&>(m_data[size_t(i) * cols]);
+#  pragma GCC diagnostic pop
   }
 
   // C array conversions
   typedef T (&array_t)[rows * cols];
-  inline operator array_t () { return m_data; }
+  operator array_t () { return m_data; }
   typedef const T (&const_array_t)[rows * cols];
-  inline operator const_array_t () const { return m_data; }
+  operator const_array_t () const { return m_data; }
 
 private:
 
@@ -166,60 +162,60 @@ public:
 };
 
 // Typedefs for the most common types and dimensions
-typedef Matrix<bool, 2U, 2U> Matrix22b;
-typedef Matrix<bool, 3U, 3U> Matrix33b;
-typedef Matrix<bool, 4U, 4U> Matrix44b;
+typedef Matrix<bool, 2_z, 2_z> Matrix22b;
+typedef Matrix<bool, 3_z, 3_z> Matrix33b;
+typedef Matrix<bool, 4_z, 4_z> Matrix44b;
 
-typedef Matrix<int, 2U, 2U> Matrix22i;
-typedef Matrix<int, 3U, 3U> Matrix33i;
-typedef Matrix<int, 4U, 4U> Matrix44i;
+typedef Matrix<int, 2_z, 2_z> Matrix22i;
+typedef Matrix<int, 3_z, 3_z> Matrix33i;
+typedef Matrix<int, 4_z, 4_z> Matrix44i;
 
-typedef Matrix<double, 2U, 2U> Matrix22g;
-typedef Matrix<double, 3U, 3U> Matrix33g;
-typedef Matrix<double, 4U, 4U> Matrix44g;
+typedef Matrix<double, 2_z, 2_z> Matrix22g;
+typedef Matrix<double, 3_z, 3_z> Matrix33g;
+typedef Matrix<double, 4_z, 4_z> Matrix44g;
 
-typedef Matrix<float, 2U, 2U> Matrix22f;
-typedef Matrix<float, 3U, 3U> Matrix33f;
-typedef Matrix<float, 4U, 4U> Matrix44f;
+typedef Matrix<float, 2_z, 2_z> Matrix22f;
+typedef Matrix<float, 3_z, 3_z> Matrix33f;
+typedef Matrix<float, 4_z, 4_z> Matrix44f;
 
 // Overloaded math operators
 #  define DEFINE_UNARY_OPERATOR(op)                                     \
-  template <typename T, uint32_t rows, uint32_t cols>                   \
-  inline Matrix<T, rows, cols> operator op (Matrix<T, rows, cols> const &a)    \
+  template <typename T, size_t rows, size_t cols>                   \
+  Matrix<T, rows, cols> operator op (Matrix<T, rows, cols> const &a)    \
   {                                                                     \
     Matrix<T, rows, cols> result;                                       \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       result.m_data[i] = op a.m_data[i];                                \
     return result;                                                      \
   }
 
 #  define DEFINE_BINARY_SCALAR_OPERATORS(op)                            \
   /* Scalar-matrix op */                                                \
-  template <typename T, uint32_t rows, uint32_t cols>                   \
-  inline Matrix<T, rows, cols> operator op (T const a, Matrix<T, rows, cols> const &b) \
+  template <typename T, size_t rows, size_t cols>                   \
+  Matrix<T, rows, cols> operator op (T const a, Matrix<T, rows, cols> const &b) \
   {                                                                     \
     Matrix<T, rows, cols> result;                                       \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       result.m_data[i] = a op b.m_data[i];                              \
     return result;                                                      \
   }                                                                     \
   /* Matrix-scalar op */                                                \
-  template <typename T, uint32_t rows, uint32_t cols>                   \
-  inline Matrix<T, rows, cols> operator op (Matrix<T, rows, cols> const &a, T const b) \
+  template <typename T, size_t rows, size_t cols>                   \
+  Matrix<T, rows, cols> operator op (Matrix<T, rows, cols> const &a, T const b) \
   {                                                                     \
     Matrix<T, rows, cols> result;                                       \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       result.m_data[i] = a.m_data[i] op b;                              \
     return result;                                                      \
   }
 
 #  define DEFINE_BINARY_OPERATORS(op)                                   \
   /* Matrix-matrix op */                                                \
-  template <typename T, uint32_t rows, uint32_t cols>                   \
-  inline Matrix<T, rows, cols> operator op (Matrix<T, rows, cols> const &a, Matrix<T, rows, cols> const &b) \
+  template <typename T, size_t rows, size_t cols>                   \
+  Matrix<T, rows, cols> operator op (Matrix<T, rows, cols> const &a, Matrix<T, rows, cols> const &b) \
   {                                                                     \
     Matrix<T, rows, cols> result;                                       \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       result.m_data[i] = a.m_data[i] op b.m_data[i];                    \
     return result;                                                      \
   }                                                                     \
@@ -227,20 +223,20 @@ typedef Matrix<float, 4U, 4U> Matrix44f;
 
 #  define DEFINE_INPLACE_SCALAR_OPERATOR(op)                            \
   /* Matrix-scalar op */                                                \
-  template <typename T, uint32_t rows, uint32_t cols>                   \
-  inline Matrix<T, rows, cols> & operator op (Matrix<T, rows, cols> &a, T const b)  \
+  template <typename T, size_t rows, size_t cols>                   \
+  Matrix<T, rows, cols> & operator op (Matrix<T, rows, cols> &a, T const b)  \
   {                                                                     \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       a.m_data[i] op b;                                                 \
     return a;                                                           \
   }
 
 #  define DEFINE_INPLACE_OPERATORS(op)                                  \
   /* Matrix-matrix op */                                                \
-  template <typename T, uint32_t rows, uint32_t cols>                   \
-  inline Matrix<T, rows, cols> & operator op (Matrix<T, rows, cols> &a, Matrix<T, rows, cols> const &b) \
+  template <typename T, size_t rows, size_t cols>                   \
+  Matrix<T, rows, cols> & operator op (Matrix<T, rows, cols> &a, Matrix<T, rows, cols> const &b) \
   {                                                                     \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       a.m_data[i] op b.m_data[i];                                       \
     return a;                                                           \
   }                                                                     \
@@ -248,29 +244,29 @@ typedef Matrix<float, 4U, 4U> Matrix44f;
 
 #  define DEFINE_RELATIONAL_OPERATORS(op)                               \
   /* Matrix-matrix op */                                                \
-  template <typename T, typename U, uint32_t rows, uint32_t cols>       \
-  inline Matrix<bool, rows, cols> operator op (Matrix<T, rows, cols> const &a, Matrix<U, rows, cols> const &b) \
+  template <typename T, typename U, size_t rows, size_t cols>       \
+  Matrix<bool, rows, cols> operator op (Matrix<T, rows, cols> const &a, Matrix<U, rows, cols> const &b) \
   {                                                                     \
     Matrix<bool, rows, cols> result;                                    \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       result.m_data[i] = a.m_data[i] op b.m_data[i];                    \
     return result;                                                      \
   }                                                                     \
   /* Scalar-matrix op */                                                \
-  template <typename T, typename U, uint32_t rows, uint32_t cols>       \
-  inline Matrix<bool, rows, cols> operator op (T const a, Matrix<U, rows, cols> const &b) \
+  template <typename T, typename U, size_t rows, size_t cols>       \
+  Matrix<bool, rows, cols> operator op (T const a, Matrix<U, rows, cols> const &b) \
   {                                                                     \
     Matrix<bool, rows, cols> result;                                    \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       result.m_data[i] = a op b.m_data[i];                              \
     return result;                                                      \
   }                                                                     \
   /* Matrix-scalar op */                                                \
-  template <typename T, typename U, uint32_t rows, uint32_t cols>       \
-  inline Matrix<bool, rows, cols> operator op (Matrix<T, rows, cols> const &a, U const b) \
+  template <typename T, typename U, size_t rows, size_t cols>       \
+  Matrix<bool, rows, cols> operator op (Matrix<T, rows, cols> const &a, U const b) \
   {                                                                     \
     Matrix<bool, rows, cols> result;                                    \
-    uint32_t i = rows * cols; while (i--)                               \
+    size_t i = rows * cols; while (i--)                               \
       result.m_data[i] = a.m_data[i] op b;                              \
     return result;                                                      \
   }
@@ -302,26 +298,26 @@ DEFINE_RELATIONAL_OPERATORS(<=)
 DEFINE_RELATIONAL_OPERATORS(>=)
 
 //! \brief Matrix-Matrix multiplication.
-template <typename T, uint32_t rows, uint32_t inner, uint32_t cols>
-inline Matrix<T, rows, cols> operator*(Matrix<T, rows, inner> const &a, Matrix<T, inner, cols> const &b)
+template <typename T, size_t rows, size_t inner, size_t cols>
+Matrix<T, rows, cols> operator*(Matrix<T, rows, inner> const &a, Matrix<T, inner, cols> const &b)
 {
   Matrix<T, rows, cols> result(zero<T>());
-  for (uint32_t i = 0U; i < rows; ++i)
-    for (uint32_t j = 0U; j < cols; ++j)
-      for (uint32_t k = 0U; k < inner; ++k)
+  for (size_t i = 0_z; i < rows; ++i)
+    for (size_t j = 0_z; j < cols; ++j)
+      for (size_t k = 0; k < inner; ++k)
         result[i][j] += a[i][k] * b[k][j];
   return result;
 }
 
 //! \brief Matrix-Vector multiplication.
-template <typename T, uint32_t rows, uint32_t cols>
-inline Vector<T, rows> operator*(Matrix<T, rows, cols> const &a, Vector<T, cols> const &b)
+template <typename T, size_t rows, size_t cols>
+Vector<T, rows> operator*(Matrix<T, rows, cols> const &a, Vector<T, cols> const &b)
 {
   Vector<T, rows> result(zero<T>());
-  uint32_t i = rows;
+  size_t i = rows;
   while (i--)
     {
-      uint32_t j = cols;
+      size_t j = cols;
       while (j--)
         result[i] += (a[i][j] * b[j]);
     }
@@ -329,15 +325,15 @@ inline Vector<T, rows> operator*(Matrix<T, rows, cols> const &a, Vector<T, cols>
 }
 
 //! \brief Vector-Matrix multiplication.
-template <typename T, uint32_t rows, uint32_t cols>
-inline Vector<T, cols> operator*(Vector<T, rows> const &a, Matrix<T, rows, cols> const &b)
+template <typename T, size_t rows, size_t cols>
+Vector<T, cols> operator*(Vector<T, rows> const &a, Matrix<T, rows, cols> const &b)
 {
   Vector<T, cols> result (zero<T>());
-  uint32_t i = rows;
+  size_t i = rows;
 
   while (i--)
     {
-      uint32_t j = cols;
+      size_t j = cols;
       while (j--)
         result[j] += (a[i] * b[i][j]);
     }
@@ -345,16 +341,16 @@ inline Vector<T, cols> operator*(Vector<T, rows> const &a, Matrix<T, rows, cols>
 }
 
 //! \brief vector = vector * Matrix
-template <typename T, uint32_t n>
-inline Vector<T, n>& operator*=(Vector<T, n> &a, Matrix<T, n, n> const &b)
+template <typename T, size_t n>
+Vector<T, n>& operator*=(Vector<T, n> &a, Matrix<T, n, n> const &b)
 {
   a = a * b;
   return a;
 }
 
 //! \brief Hadamard product.
-template <typename T, uint32_t rows, uint32_t cols>
-inline Matrix<T, rows, cols>& operator*=(Matrix<T, rows, cols> &a, Matrix<T, cols, cols> const &b)
+template <typename T, size_t rows, size_t cols>
+Matrix<T, rows, cols>& operator*=(Matrix<T, rows, cols> &a, Matrix<T, cols, cols> const &b)
 {
   a = a * b;
   return a;
@@ -363,12 +359,12 @@ inline Matrix<T, rows, cols>& operator*=(Matrix<T, rows, cols> &a, Matrix<T, col
 namespace matrix
 {
 
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline void identity(Matrix<T, rows, cols> &a)
+  template <typename T, size_t rows, size_t cols>
+  void identity(Matrix<T, rows, cols> &a)
   {
     static_assert(rows == cols, "Can't construct identity for a non-square matrix");
     a *= zero<T>();
-    uint32_t i = rows;
+    size_t i = rows;
     while (i--)
       {
         a[i][i] = one<T>();
@@ -380,11 +376,11 @@ namespace matrix
   //! boolean matrix.
   //! \return the boolean matrix containing the result of each element
   //! comparaison.
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline Matrix<bool, rows, cols> compare(Matrix<T, rows, cols> const &a, Matrix<T, rows, cols> const &b)
+  template <typename T, size_t rows, size_t cols>
+  Matrix<bool, rows, cols> compare(Matrix<T, rows, cols> const &a, Matrix<T, rows, cols> const &b)
   {
     Matrix<bool, rows, cols> result;
-    uint32_t i = rows * cols;
+    size_t i = rows * cols;
 
     while (i--)
       result.m_data[i] = maths::almostEqual(a.m_data[i], b.m_data[i]);
@@ -393,14 +389,14 @@ namespace matrix
 
   //! \brief Hadamard product (element by element multiplication).
   //! See https://en.wikipedia.org/wiki/Hadamard_product_(matrices)
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline Matrix<T, rows, cols> Hprod(Matrix<T, rows, cols> const &a, Matrix<T, rows, cols> const &b)
+  template <typename T, size_t rows, size_t cols>
+  Matrix<T, rows, cols> Hprod(Matrix<T, rows, cols> const &a, Matrix<T, rows, cols> const &b)
   {
     Matrix<T, rows, cols> result;
-    uint32_t i = rows;
+    size_t i = rows;
     while (i--)
       {
-        uint32_t j = cols;
+        size_t j = cols;
         while (j--)
           result[i][j] = a[i][j] * b[i][j];
       }
@@ -408,14 +404,14 @@ namespace matrix
   }
 
   //! \brief Transpose the matrix.
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline Matrix<T, cols, rows> transpose(Matrix<T, rows, cols> const &a)
+  template <typename T, size_t rows, size_t cols>
+  Matrix<T, cols, rows> transpose(Matrix<T, rows, cols> const &a)
   {
     Matrix<T, cols, rows> result;
-    uint32_t i = rows;
+    size_t i = rows;
     while (i--)
       {
-        uint32_t j = cols;
+        size_t j = cols;
         while (j--)
           {
             result[j][i] = a[i][j];
@@ -425,13 +421,13 @@ namespace matrix
   }
 
   //! \brief Compute the matrix trace. The matrix shall be a squared matrix.
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline T trace(Matrix<T, rows, cols> const &a)
+  template <typename T, size_t rows, size_t cols>
+  T trace(Matrix<T, rows, cols> const &a)
   {
     static_assert(rows == cols, "Can't compute the trace of a non-square matrix");
 
     T result = zero<T>();
-    uint32_t i = rows;
+    size_t i = rows;
 
     while (i--)
       result += a[i][i];
@@ -440,16 +436,16 @@ namespace matrix
   }
 
   //! \brief Check if the matrix is diagonal. The matrix shall be a squared matrix.
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline bool isDiagonal(Matrix<T, rows, cols> const &a)
+  template <typename T, size_t rows, size_t cols>
+  bool isDiagonal(Matrix<T, rows, cols> const &a)
   {
     static_assert(rows == cols, "Can't compute the diagonal of a non-square matrix");
 
-    uint32_t i = rows;
+    size_t i = rows;
 
     while (i--)
       {
-        uint32_t j = cols;
+        size_t j = cols;
         while (j--)
           {
             if (i != j)
@@ -463,16 +459,16 @@ namespace matrix
   }
 
   //! \brief Check if the matrix is symetric. The matrix shall be a squared matrix.
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline bool isSymmetric(Matrix<T, rows, cols> const &a)
+  template <typename T, size_t rows, size_t cols>
+  bool isSymmetric(Matrix<T, rows, cols> const &a)
   {
     static_assert(rows == cols, "Can't compute the diagonal of a non-square matrix");
 
-    uint32_t i = rows;
+    size_t i = rows;
 
     while (i--)
       {
-        uint32_t j = cols;
+        size_t j = cols;
         while (j--)
           {
             if (i != j)
@@ -486,10 +482,10 @@ namespace matrix
   }
 
   //! \brief Check if the boolean matrix has all its elements true.
-  template <uint32_t rows, uint32_t cols>
-  inline bool allTrue(Matrix<bool, rows, cols> const &a)
+  template <size_t rows, size_t cols>
+  bool allTrue(Matrix<bool, rows, cols> const &a)
   {
-    uint32_t i = rows * cols;
+    size_t i = rows * cols;
 
     while (i--)
       if (false == a.m_data[i])
@@ -498,10 +494,10 @@ namespace matrix
   }
 
   //! \brief Check if the boolean matrix has all its elements false.
-  template <uint32_t rows, uint32_t cols>
-  inline bool allFalse(Matrix<bool, rows, cols> const &a)
+  template <size_t rows, size_t cols>
+  bool allFalse(Matrix<bool, rows, cols> const &a)
   {
-    uint32_t i = rows * cols;
+    size_t i = rows * cols;
 
     while (i--)
       if (false != a.m_data[i])
@@ -509,8 +505,8 @@ namespace matrix
     return true;
   }
 
-  template <typename T, uint32_t rows, uint32_t cols>
-  inline bool swapRows(Matrix<T, rows, cols> &a, uint32_t const i, uint32_t const j)
+  template <typename T, size_t rows, size_t cols>
+  bool swapRows(Matrix<T, rows, cols> &a, size_t const i, size_t const j)
   {
     if (i == j)
       return true;
@@ -528,13 +524,13 @@ namespace matrix
   //! it in two new matricies L and U.  It uses the Gaussian
   //! Elimination with partial pivoting algorithm from Golub & Van
   //! Loan, Matrix Computations, Algorithm 3.4.1.
-  template <typename T, uint32_t rows, uint32_t cols>
+  template <typename T, size_t rows, size_t cols>
   void LUdecomposition(Matrix<T, rows, cols> const &AA,
                        Matrix<T, rows, cols> &L,
                        Matrix<T, rows, cols> &U,
                        Matrix<T, rows, cols> &P)
   {
-    uint32_t i, j;
+    size_t i, j;
 
     // Set matrices to 0
     L *= zero<T>();
@@ -545,10 +541,10 @@ namespace matrix
 
     for (i = 0; i < rows - 1; ++i)
       {
-        double max = maths::abs(A[i][i]);
-        uint32_t pivot = i;
+        double max = std::abs(A[i][i]);
+        size_t pivot = i;
 
-        for (j = i + 1U; j < rows; ++j)
+        for (j = i + 1_z; j < rows; ++j)
           {
             if (maths::abs(A[j][i]) > max)
               {
@@ -563,26 +559,26 @@ namespace matrix
             matrix::swapRows(P, i, pivot);
           }
 
-        // WARNING:
+        // ERROR:
         // -- original code:  if (A[i][i] != 0.0)
         // -- new code which seems to give less good results: if (fabs(A[i][i]) > 0.00001)
         // we cannot use == with floats or double !!!!
         if (A[i][i] != zero<T>())
           {
-            for (j = i + 1U; j < rows; ++j)
+            for (j = i + 1_z; j < rows; ++j)
               {
                 A[j][i] = A[j][i] / A[i][i];
-                for (uint32_t k = i + 1U; k < rows; ++k)
+                for (size_t k = i + 1_z; k < rows; ++k)
                   {
                     A[j][k] = A[j][k] - A[j][i] * A[i][k];
                   }
               }
           }
       }
-    for (i = 0U; i < rows; ++i)
+    for (i = 0_z; i < rows; ++i)
       {
         L[i][i] = one<T>();
-        for (j = 0U; j < rows; ++j)
+        for (j = 0_z; j < rows; ++j)
           {
             if (j < i)
               {
@@ -598,7 +594,7 @@ namespace matrix
 
   //! \brief This function solves an LU decomposed matrix equation
   //! LU.x = b.
-  template <typename T, uint32_t rows, uint32_t cols>
+  template <typename T, size_t rows, size_t cols>
   Vector<T, rows> LUsolve(Matrix<T, rows, cols> const &L,
                           Matrix<T, rows, cols> const &U,
                           Matrix<T, rows, cols> const &P,
@@ -612,10 +608,10 @@ namespace matrix
     // y = U.x, thus Ly = b
     // solve for y by forward substitution
     y[0] = b[0] / L[0][0];
-    for (uint32_t i = 1U; i < rows; ++i)
+    for (size_t i = 1_z; i < rows; ++i)
       {
         y[i] = b[i] / L[i][i];
-        for (uint32_t j = 0U; j < i; ++j)
+        for (size_t j = 0_z; j < i; ++j)
           {
             y[i] -= (L[i][j] * y[j] / L[i][i]);
           }
@@ -623,12 +619,14 @@ namespace matrix
 
     // U.x = y
     // Solve for x by backward substitution
-    uint32_t r = rows - 1U;
+    size_t r = rows - 1_z;
     solution[r] = y[r] / U[r][r];
-    for (int32_t i = r - 1; i >= 0; i--)
+
+    size_t i = r;
+    while (i--)
       {
         solution[i] = y[i] / U[i][i];
-        for (uint32_t j = i + 1U; j < rows; j++)
+        for (size_t j = i + 1u; j < rows; j++)
           {
             solution[i] -= (U[i][j] * solution[j] / U[i][i]);
           }
@@ -636,7 +634,7 @@ namespace matrix
     return solution;
   }
 
-  template <typename T, uint32_t rows, uint32_t cols>
+  template <typename T, size_t rows, size_t cols>
   Vector<T, rows> LUsolve(Matrix<T, rows, cols> const &A,
                           Vector<T, rows> const &b)
   {
@@ -650,14 +648,14 @@ namespace matrix
 } // namespace
 
 //! \brief Display the matrix.
-template <typename T, uint32_t rows, uint32_t cols>
-inline std::ostream& operator<<(std::ostream& os, Matrix<T, rows, cols> const& m)
+template <typename T, size_t rows, size_t cols>
+std::ostream& operator<<(std::ostream& os, Matrix<T, rows, cols> const& m)
 {
-  for (uint32_t i = 0U; i < rows; ++i)
+  for (size_t i = 0_z; i < rows; ++i)
     {
-      for (uint32_t j = 0U; j < cols; ++j)
-        std::cout << m[i][j] << " ";
-      std::cout << std::endl;
+      for (size_t j = 0_z; j < cols; ++j)
+        os << m[i][j] << " ";
+      os << '\n';
     }
   return os;
 }
