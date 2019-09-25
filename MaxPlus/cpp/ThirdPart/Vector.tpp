@@ -1,32 +1,11 @@
 // -*- c++ -*- Coloration Syntaxique pour Emacs
-//=====================================================================
-// SimTaDyn: A GIS in a spreadsheet.
-// Copyright 2018 Quentin Quadrat <lecrapouille@gmail.com>
 //
-// This file is part of SimTaDyn.
-//
-// SimTaDyn is free software: you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
-//=====================================================================
-
-#ifndef VECTOR_TPP
-#  define VECTOR_TPP
-
-// *************************************************************************************************
 // Inspired from https://github.com/Reedbeta/reed-util
 // and http://www.reedbeta.com/blog/on-vector-math-libraries/
 // and http://www.ogre3d.org
-// *************************************************************************************************
+
+#ifndef VECTOR_TPP
+#  define VECTOR_TPP
 
 #  include "Maths.hpp"
 #  include <initializer_list>
@@ -39,46 +18,46 @@
   /*! \brief Empty constructor */                                       \
   Vector()                                                              \
   {                                                                     \
-    static_assert(N >= 2U, "Minimun dimension for a vector is 2");      \
+    static_assert(N >= 2_z, "Minimun dimension for a vector is 2");     \
   }                                                                     \
                                                                         \
   /*! \brief Constructor with initialization list */                    \
   Vector(std::initializer_list<T> initList)                             \
   {                                                                     \
-    const uint32_t m = std::min(N, uint32_t(initList.size()));          \
+    const size_t m = std::min(static_cast<size_t>(N), initList.size());  /* FIXME cast */                    \
     auto iter = initList.begin();                                       \
-    for (uint32_t i = 0; i < m; ++i)                                    \
+    for (size_t i = 0_z; i < m; ++i)                                    \
       {                                                                 \
         m_data[i] = *iter;                                              \
         ++iter;                                                         \
       }                                                                 \
                                                                         \
     /* Zero-fill any remaining elements */                              \
-    for (uint32_t i = m; i < N; ++i)                                    \
+    for (size_t i = m; i < N; ++i)                                      \
       {                                                                 \
         m_data[i] = zero<T>();                                          \
       }                                                                 \
   }                                                                     \
                                                                         \
   /*! \brief Constructor with uniform value */                          \
-  explicit Vector(T const a)                                            \
+  explicit Vector(T const scalar)                                       \
   {                                                                     \
-    uint32_t i = N;                                                     \
+    size_t i = N;                                                       \
     while (i--)                                                         \
       {                                                                 \
-        m_data[i] = a;                                                  \
+        m_data[i] = scalar;                                             \
       }                                                                 \
   }                                                                     \
                                                                         \
   /*! \brief Constructor by copy */                                     \
-  template <typename U, uint32_t nOther>                                \
-  explicit Vector(Vector<U, nOther> const &v)                           \
+  template <typename U, size_t nOther>                                  \
+  explicit Vector(Vector<U, nOther> const &other)                       \
   {                                                                     \
-    const uint32_t m = std::min(N, nOther);                             \
-    uint32_t i = m;                                                     \
+    const size_t m = std::min(static_cast<size_t>(N), nOther);  /* FIXME cast */              \
+    size_t i = m;                                                       \
     while (i--)                                                         \
       {                                                                 \
-        m_data[i] = T(v[i]);                                            \
+        m_data[i] = T(other[i]);                                        \
       }                                                                 \
                                                                         \
     /* Zero-fill any remaining elements */                              \
@@ -89,13 +68,13 @@
   }                                                                     \
                                                                         \
   /*! \brief Return the dimension */                                    \
-  inline uint32_t size() const { return N; }                            \
+  size_t size() const { return N; }                                     \
                                                                         \
   /* Accessors */                                                       \
-  T& operator[](uint32_t i)             { return m_data[i]; }           \
-  const T& operator[](uint32_t i) const { return m_data[i]; }           \
-  T& operator[](int i)                  { return m_data[i]; }           \
-  const T& operator[](int i) const      { return m_data[i]; }           \
+  T& operator[](size_t const i)          { return m_data[i]; }          \
+  const T& operator[](size_t const i) const { return m_data[i]; }       \
+  T& operator[](int const i)             { return m_data[i]; }          \
+  const T& operator[](int const i) const { return m_data[i]; }          \
                                                                         \
   /* C array conversions */                                             \
   typedef T(&array_t)[N];                                               \
@@ -112,12 +91,12 @@
 // *************************************************************************************************
 //! \brief Generic mathematic vector: T for the type (float, int) and n the vector dimension
 // *************************************************************************************************
-template <typename T, uint32_t n>
+template <typename T, size_t n>
 class Vector
 {
 public:
 
-  VECTOR_DIM(n);
+  VECTOR_DIM(n)
 
 protected:
 
@@ -128,175 +107,187 @@ protected:
 //! \brief Specialization for n = 2
 // *************************************************************************************************
 template <typename T>
-class Vector<T, 2U>
+class Vector<T, 2_z>
 {
 public:
 
-  Vector(const T x, const T y)
+  Vector(const T scalar_x, const T scalar_y)
   {
-    this->x = x;
-    this->y = y;
+    x = scalar_x;
+    y = scalar_y;
   }
 
-  VECTOR_DIM(2U);
+  VECTOR_DIM(2_z)
 
 public:
 
   union
   {
-    T m_data[2U];
-    struct { T x, y; };
-    struct { T u, v; };
+    T m_data[2_z];
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    struct { T x; T y; };
+    struct { T u; T v; };
+#pragma GCC diagnostic pop
   };
 
-  const static Vector<T, 2U> DUMMY;
-  const static Vector<T, 2U> ZERO;
-  const static Vector<T, 2U> UNIT_SCALE;
-  const static Vector<T, 2U> NEGATIVE_UNIT_SCALE;
-  const static Vector<T, 2U> UNIT_X;
-  const static Vector<T, 2U> UNIT_Y;
-  const static Vector<T, 2U> NEGATIVE_UNIT_X;
-  const static Vector<T, 2U> NEGATIVE_UNIT_Y;
+  const static Vector<T, 2_z> DUMMY;
+  const static Vector<T, 2_z> ZERO;
+  const static Vector<T, 2_z> UNIT_SCALE;
+  const static Vector<T, 2_z> NEGATIVE_UNIT_SCALE;
+  const static Vector<T, 2_z> UNIT_X;
+  const static Vector<T, 2_z> UNIT_Y;
+  const static Vector<T, 2_z> NEGATIVE_UNIT_X;
+  const static Vector<T, 2_z> NEGATIVE_UNIT_Y;
 };
 
 // Predifined vectors
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::ZERO(zero<T>());
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_SCALE(one<T>());
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_SCALE(-one<T>());
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_X(one<T>(), zero<T>());
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::UNIT_Y(zero<T>(), one<T>());
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_X(-one<T>(), zero<T>());
-template <typename T> const Vector<T, 2U> Vector<T, 2U>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>());
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::DUMMY(T(NAN));
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::ZERO(zero<T>());
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::UNIT_X(one<T>(), zero<T>());
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::UNIT_Y(zero<T>(), one<T>());
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::NEGATIVE_UNIT_X(-one<T>(), zero<T>());
+template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>());
 
 // *************************************************************************************************
 //! \brief Specialization for n = 3
 // *************************************************************************************************
 template <typename T>
-class Vector<T, 3U>
+class Vector<T, 3_z>
 {
 public:
 
-  Vector(Vector<T, 2U> const &v, const T z = zero<T>())
+  Vector(Vector<T, 2_z> const &v, const T scalar_z = zero<T>())
   {
-    this->x = v.x;
-    this->y = v.y;
-    this->z = z;
+    x = v.x;
+    y = v.y;
+    z = scalar_z;
   }
 
-  Vector(const T x, const T y, const T z = zero<T>())
+  Vector(const T scalar_x, const T scalar_y, const T scalar_z = zero<T>())
   {
-    this->x = x;
-    this->y = y;
-    this->z = z;
+    x = scalar_x;
+    y = scalar_y;
+    z = scalar_z;
   }
 
-  VECTOR_DIM(3U);
+  VECTOR_DIM(3_z)
 
 public:
 
   union
   {
-    T m_data[3U];
-    struct { T x, y, z; };
-    struct { T r, g, b; };
+    T m_data[3_z];
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    struct { T x; T y; T z; };
+    struct { T r; T g; T b; };
+#pragma GCC diagnostic pop
   };
 
-  const static Vector<T, 3U> DUMMY;
-  const static Vector<T, 3U> ZERO;
-  const static Vector<T, 3U> UNIT_SCALE;
-  const static Vector<T, 3U> NEGATIVE_UNIT_SCALE;
-  const static Vector<T, 3U> UNIT_X;
-  const static Vector<T, 3U> UNIT_Y;
-  const static Vector<T, 3U> UNIT_Z;
-  const static Vector<T, 3U> NEGATIVE_UNIT_X;
-  const static Vector<T, 3U> NEGATIVE_UNIT_Y;
-  const static Vector<T, 3U> NEGATIVE_UNIT_Z;
+  const static Vector<T, 3_z> DUMMY;
+  const static Vector<T, 3_z> ZERO;
+  const static Vector<T, 3_z> UNIT_SCALE;
+  const static Vector<T, 3_z> NEGATIVE_UNIT_SCALE;
+  const static Vector<T, 3_z> UNIT_X;
+  const static Vector<T, 3_z> UNIT_Y;
+  const static Vector<T, 3_z> UNIT_Z;
+  const static Vector<T, 3_z> NEGATIVE_UNIT_X;
+  const static Vector<T, 3_z> NEGATIVE_UNIT_Y;
+  const static Vector<T, 3_z> NEGATIVE_UNIT_Z;
 };
 
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::ZERO(zero<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_SCALE(one<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_SCALE(-one<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_X(one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_Y(zero<T>(), one<T>(), zero<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::UNIT_Z(zero<T>(), zero<T>(), one<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>());
-template <typename T> const Vector<T, 3U> Vector<T, 3U>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::DUMMY(T(NAN));
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::ZERO(zero<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_X(one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_Y(zero<T>(), one<T>(), zero<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_Z(zero<T>(), zero<T>(), one<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>());
+template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>());
 
 // *************************************************************************************************
 // Specializations for n = 4
 // *************************************************************************************************
 template <typename T>
-class Vector<T, 4U>
+class Vector<T, 4_z>
 {
 public:
 
-  Vector(Vector<T, 3U> const &v, const T w = zero<T>())
+  Vector(Vector<T, 3_z> const &v, const T scalar_w = zero<T>())
   {
-    this->x = v.x;
-    this->y = v.y;
-    this->z = v.z;
-    this->w = w;
+    x = v.x;
+    y = v.y;
+    z = v.z;
+    w = scalar_w;
   }
 
-  Vector(const T x, const T y, const T z, const T w)
+  Vector(const T scalar_x, const T scalar_y, const T scalar_z, const T scalar_w)
   {
-    this->x = x;
-    this->y = y;
-    this->z = z;
-    this->w = w;
+    x = scalar_x;
+    y = scalar_y;
+    z = scalar_z;
+    w = scalar_w;
   }
 
-  VECTOR_DIM(4U);
+  VECTOR_DIM(4_z)
 
 public:
 
   union
   {
-    T m_data[4U];
-    struct { T x, y, z, w; };
-    struct { T r, g, b, a; };
+    T m_data[4_z];
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    struct { T x; T y; T z; T w; };
+    struct { T r; T g; T b; T a; };
+#pragma GCC diagnostic pop
   };
 
-  const static Vector<T, 4U> DUMMY;
-  const static Vector<T, 4U> ZERO;
-  const static Vector<T, 4U> UNIT_SCALE;
-  const static Vector<T, 4U> NEGATIVE_UNIT_SCALE;
-  const static Vector<T, 4U> UNIT_X;
-  const static Vector<T, 4U> UNIT_Y;
-  const static Vector<T, 4U> UNIT_Z;
-  const static Vector<T, 4U> UNIT_W;
-  const static Vector<T, 4U> NEGATIVE_UNIT_X;
-  const static Vector<T, 4U> NEGATIVE_UNIT_Y;
-  const static Vector<T, 4U> NEGATIVE_UNIT_Z;
-  const static Vector<T, 4U> NEGATIVE_UNIT_W;
+  const static Vector<T, 4_z> DUMMY;
+  const static Vector<T, 4_z> ZERO;
+  const static Vector<T, 4_z> UNIT_SCALE;
+  const static Vector<T, 4_z> NEGATIVE_UNIT_SCALE;
+  const static Vector<T, 4_z> UNIT_X;
+  const static Vector<T, 4_z> UNIT_Y;
+  const static Vector<T, 4_z> UNIT_Z;
+  const static Vector<T, 4_z> UNIT_W;
+  const static Vector<T, 4_z> NEGATIVE_UNIT_X;
+  const static Vector<T, 4_z> NEGATIVE_UNIT_Y;
+  const static Vector<T, 4_z> NEGATIVE_UNIT_Z;
+  const static Vector<T, 4_z> NEGATIVE_UNIT_W;
 };
 
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::ZERO(zero<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_SCALE(one<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_SCALE(-one<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_X(one<T>(), zero<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_Y(zero<T>(), one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_Z(zero<T>(), zero<T>(), one<T>(), zero<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::UNIT_W(zero<T>(), zero<T>(), zero<T>(), one<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>(), zero<T>());
-template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(zero<T>(), zero<T>(), zero<T>(), -one<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::DUMMY(T(NAN));
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::ZERO(zero<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_X(one<T>(), zero<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_Y(zero<T>(), one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_Z(zero<T>(), zero<T>(), one<T>(), zero<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_W(zero<T>(), zero<T>(), zero<T>(), one<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>(), zero<T>());
+template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_W(zero<T>(), zero<T>(), zero<T>(), -one<T>());
 
 // *************************************************************************************************
 // Overloaded math operators
 // *************************************************************************************************
 
 #define DEFINE_UNARY_OPERATOR(op)                       \
-  template <typename T, uint32_t n>                     \
+  template <typename T, size_t n>                       \
   Vector<T, n> operator op (Vector<T, n> const &a)      \
   {                                                     \
     Vector<T, n> result;                                \
-    uint32_t i = n;                                     \
+    size_t i = n;                                       \
     while (i--)                                         \
       result[i] = op a[i];                              \
     return result;                                      \
@@ -304,31 +295,31 @@ template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(zero<T>
 
 #define DEFINE_BINARY_OPERATORS(op)                                     \
   /* Vector-Vector op */                                                \
-  template <typename T, uint32_t n>                                     \
+  template <typename T, size_t n>                                       \
   Vector<T, n> operator op (Vector<T, n> const &a, Vector<T, n> const &b) \
   {                                                                     \
     Vector<T, n> result;                                                \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       result[i] = a[i] op b[i];                                         \
     return result;                                                      \
   }                                                                     \
   /* Scalar-Vector op */                                                \
-  template <typename T, uint32_t n>                                     \
+  template <typename T, size_t n>                                       \
   Vector<T, n> operator op (T const a, Vector<T, n> const &b)           \
   {                                                                     \
     Vector<T, n> result;                                                \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       result[i] = a op b[i];                                            \
     return result;                                                      \
   }                                                                     \
   /* Vector-scalar op */                                                \
-  template <typename T, uint32_t n>                                     \
+  template <typename T, size_t n>                                       \
   Vector<T, n> operator op (Vector<T, n> const &a, T const b)           \
   {                                                                     \
     Vector<T, n> result;                                                \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       result[i] = a[i] op b;                                            \
     return result;                                                      \
@@ -336,19 +327,19 @@ template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(zero<T>
 
 #define DEFINE_INPLACE_OPERATORS(op)                                    \
   /* Vector-Vector op */                                                \
-  template <typename T, uint32_t n>                                     \
+  template <typename T, size_t n>                                       \
   Vector<T, n>& operator op (Vector<T, n> &a, Vector<T, n> const &b)    \
   {                                                                     \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       a[i] op b[i];                                                     \
     return a;                                                           \
   }                                                                     \
   /* Vector-scalar op */                                                \
-  template <typename T, uint32_t n>                                     \
+  template <typename T, size_t n>                                       \
   Vector<T, n>& operator op (Vector<T, n> &a, T const b)                \
   {                                                                     \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       a[i] op b;                                                        \
     return a;                                                           \
@@ -356,42 +347,42 @@ template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(zero<T>
 
 #define DEFINE_RELATIONAL_OPERATORS(op)                                 \
   /* Vector-Vector op */                                                \
-  template <typename T, typename U, uint32_t n>                         \
+  template <typename T, typename U, size_t n>                           \
   Vector<bool, n> operator op (Vector<T, n> const &a, Vector<U, n> const &b) \
   {                                                                     \
     Vector<bool, n> result;                                             \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       result[i] = a[i] op b[i];                                         \
     return result;                                                      \
   }                                                                     \
   /* Scalar-Vector op */                                                \
-  template <typename T, typename U, uint32_t n>                         \
+  template <typename T, typename U, size_t n>                           \
   Vector<bool, n> operator op (T const &a, Vector<U, n> const &b)       \
   {                                                                     \
     Vector<bool, n> result;                                             \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       result[i] = a op b[i];                                            \
     return result;                                                      \
   }                                                                     \
   /* Vector-scalar op */                                                \
-  template <typename T, typename U, uint32_t n>                         \
+  template <typename T, typename U, size_t n>                           \
   Vector<bool, n> operator op (Vector<T, n> const &a, U const &b)       \
   {                                                                     \
     Vector<bool, n> result;                                             \
-    uint32_t i = n;                                                     \
+    size_t i = n;                                                       \
     while (i--)                                                         \
       result[i] = a[i] op b;                                            \
     return result;                                                      \
   }
 
 #define DEFINE_FUN1_OPERATOR(name, op)                          \
-  template <typename T, uint32_t n>                             \
+  template <typename T, size_t n>                               \
   Vector<T, n> name(Vector<T, n> const &a)                      \
   {                                                             \
     Vector<T, n> result;                                        \
-    uint32_t i = n;                                             \
+    size_t i = n;                                               \
                                                                 \
     while (i--)                                                 \
       result[i] = op(a[i]);                                     \
@@ -399,11 +390,11 @@ template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(zero<T>
   }
 
 #define DEFINE_FUN2_OPERATOR(name, op)                          \
-  template <typename T, uint32_t n>                             \
+  template <typename T, size_t n>                               \
   Vector<T, n> name(Vector<T, n> const &a, Vector<T, n> const &b) \
   {                                                             \
     Vector<T, n> result;                                        \
-    uint32_t i = n;                                             \
+    size_t i = n;                                               \
                                                                 \
     while (i--)                                                 \
       result[i] = op(a[i], b[i]);                               \
@@ -411,10 +402,10 @@ template <typename T> const Vector<T, 4U> Vector<T, 4U>::NEGATIVE_UNIT_W(zero<T>
   }
 
 #define DEFINE_BOOL_OPERATOR(name, op)                          \
-  template <typename T, uint32_t n>                             \
+  template <typename T, size_t n>                               \
   bool name(Vector<T, n> const &a, Vector<T, n> const &b)       \
   {                                                             \
-    uint32_t i = n;                                             \
+    size_t i = n;                                               \
                                                                 \
     while (i--)                                                 \
       {                                                         \
@@ -466,13 +457,13 @@ namespace vector
   //! \note Do not confuse this function with operator==() or the
   //! function equivalent() which do not have the same behavior.
   //! \return true if all elements have the same value.
-  template <typename T, uint32_t n>
-  inline typename std::enable_if<std::numeric_limits<T>::is_integer, bool>::type
+  template <typename T, size_t n>
+  typename std::enable_if<std::numeric_limits<T>::is_integer, bool>::type
   eq(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     if (&a != &b)
       {
-        uint32_t i = n;
+        size_t i = n;
         while (i--)
           {
             if (a[i] != b[i])
@@ -486,13 +477,13 @@ namespace vector
   //! \note Do not confuse this function with operator==() or the
   //! function equivalent() which do not have the same behavior.
   //! \return true if all elements have the same value.
-  template <typename T, uint32_t n>
-  inline typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+  template <typename T, size_t n>
+  typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
   eq(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     if (&a != &b)
       {
-        uint32_t i = n;
+        size_t i = n;
         while (i--)
           {
             if (!maths::almostEqual(a[i], b[i]))
@@ -502,18 +493,18 @@ namespace vector
     return true;
   }
 
-  template <typename T, uint32_t n>
-  inline bool ne(Vector<T, n> const &a, Vector<T, n> const &b)
+  template <typename T, size_t n>
+  bool ne(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     return !vector::eq(a, b);
   }
 
-  template <typename T, uint32_t n>
+  template <typename T, size_t n>
   void swap(Vector<T, n> &a, Vector<T, n> &b)
   {
     if (&a != &b)
       {
-        uint32_t i = n;
+        size_t i = n;
         while (i--)
           {
             std::swap(a[i], b[i]);
@@ -530,7 +521,7 @@ namespace vector
   //! \return Nan if vectors are not collinear. Return 0 if Return k if they are collinear.
   //!
   //! \note Use this function for T a familly of float and not for integers.
-  template <typename T, uint32_t n>
+  template <typename T, size_t n>
   T collinearity(Vector<T, n> const &u, Vector<T, n> const &v)
   {
     // Null vector ?
@@ -538,7 +529,7 @@ namespace vector
       return zero<T>();
 
     const T k = u[0] / v[0];
-    for (uint32_t i = 1U; i < n; ++i)
+    for (size_t i = 1_z; i < n; ++i)
       {
         if (!maths::almostEqual(k * v[i], u[i]))
           return T(NAN);
@@ -547,7 +538,7 @@ namespace vector
   }
 
   //! \brief Check if two vectors are parallels.
-  template <typename T, uint32_t n>
+  template <typename T, size_t n>
   bool collinear(Vector<T, n> const &u, Vector<T, n> const &v)
   {
     T k = collinearity(u, v);
@@ -556,7 +547,7 @@ namespace vector
 
   //! \brief Check if two vectors are mathematicaly equivalent: same
   //! norm (length), same direction (parallel) and same sign.
-  template <typename T, uint32_t n>
+  template <typename T, size_t n>
   bool equivalent(Vector<T, n> const &u, Vector<T, n> const &v)
   {
     T k = collinearity(u, v);
@@ -564,7 +555,7 @@ namespace vector
   }
 
   //! \brief Check if three points A, B, C are aligned.
-  template <typename T, uint32_t n>
+  template <typename T, size_t n>
   bool arePointsAligned(Vector<T, n> const &a, Vector<T, n> const &b, Vector<T, n> const &c)
   {
     return collinear(b - a, c - a);
@@ -585,11 +576,11 @@ namespace vector
 // aligned(A, B, C): colineare(AB, AC)
 
   //! \brief Constrain each value of the vectorto lower and upper bounds.
-  template <typename T, uint32_t n>
+  template <typename T, size_t n>
   Vector<T, n> clamp(Vector<T, n> const &a, T const lower, T const upper)
   {
     Vector<T, n> result;
-    uint32_t i = n;
+    size_t i = n;
 
     while (i--)
       result[i] = maths::clamp(a[i], lower, upper);
@@ -597,59 +588,59 @@ namespace vector
   }
 
   //! \brief Dot product.
-  template <typename T, uint32_t n>
+  template <typename T, size_t n>
   T dot(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     T result(zero<T>());
-    uint32_t i = n;
+    size_t i = n;
 
     while (i--)
       result += a[i] * b[i];
     return result;
   }
 
-  template <typename T, uint32_t n>
-  inline T squaredLength(Vector<T, n> const &a)
+  template <typename T, size_t n>
+  T squaredLength(Vector<T, n> const &a)
   {
     return dot(a, a);
   }
 
-  template <typename T, uint32_t n>
-  inline T length(Vector<T, n> const &a)
+  template <typename T, size_t n>
+  T length(Vector<T, n> const &a)
   {
-    return maths::sqrt(squaredLength(a));
+    return T(maths::sqrt(squaredLength(a)));
   }
 
-  template <typename T, uint32_t n>
-  inline T norm(Vector<T, n> const &a)
+  template <typename T, size_t n>
+  T norm(Vector<T, n> const &a)
   {
     return length(a);
   }
 
-  template <typename T, uint32_t n>
-  inline T squaredDistance(Vector<T, n> const &a, Vector<T, n> const &b)
+  template <typename T, size_t n>
+  T squaredDistance(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     return squaredLength(a - b);
   }
 
-  template <typename T, uint32_t n>
-  inline T distance(Vector<T, n> const &a, Vector<T, n> const &b)
+  template <typename T, size_t n>
+  T distance(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     return maths::sqrt(squaredDistance(a, b));
   }
 
-  template <typename T, uint32_t n>
-  inline Vector<T, n> normalize(Vector<T, n> const &a)
+  template <typename T, size_t n>
+  Vector<T, n> normalize(Vector<T, n> const &a)
   {
     // FIXME: throw exception
     return a / length(a);
   }
 
-  template <typename T, uint32_t n>
-  inline Vector<T, n> middle(Vector<T, n> const &a, Vector<T, n> const &b)
+  template <typename T, size_t n>
+  Vector<T, n> middle(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     Vector<T, n> result;
-    uint32_t i = n;
+    size_t i = n;
 
     while (i--)
       result[i] = (a[i] + b[i]) / T(2);
@@ -657,7 +648,7 @@ namespace vector
   }
 
   template <typename T>
-  inline Vector<T, 3U> cross(Vector<T, 3U> const &a, Vector<T, 3> const &b)
+  Vector<T, 3_z> cross(Vector<T, 3_z> const &a, Vector<T, 3> const &b)
   {
     return
       {
@@ -669,13 +660,13 @@ namespace vector
 
   //! \brief Perpendicular
   template <typename T>
-  inline Vector<T, 2U> orthogonal(Vector<T, 2U> const &a)
+  Vector<T, 2_z> orthogonal(Vector<T, 2_z> const &a)
   {
     return { -a.y, a.x };
   }
 
   template <typename T>
-  inline Vector<T, 3U> orthogonal(Vector<T, 3U> const &a)
+  Vector<T, 3_z> orthogonal(Vector<T, 3_z> const &a)
   {
     // Implementation due to Sam Hocevar - see blog post:
     // http://lolengine.net/blog/2013/09/21/picking-orthogonal-Vector-combing-coconuts
@@ -685,22 +676,22 @@ namespace vector
       return { zero<T>(), -a.z, a.y };
   }
 
-  template <typename T, uint32_t n>
-  inline typename std::enable_if<std::numeric_limits<T>::is_integer, bool>::type
+  template <typename T, size_t n>
+  typename std::enable_if<std::numeric_limits<T>::is_integer, bool>::type
   orthogonal(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     return zero<T>() == dot(a, b);
   }
 
-  template <typename T, uint32_t n>
-  inline typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+  template <typename T, size_t n>
+  typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
   orthogonal(Vector<T, n> const &a, Vector<T, n> const &b)
   {
     return maths::almostZero(dot(a, b));
   }
 
-  template <typename T, uint32_t n>
-  inline T angleBetween(Vector<T, n> const &org, Vector<T, n> const &dest)
+  template <typename T, size_t n>
+  T angleBetween(Vector<T, n> const &org, Vector<T, n> const &dest)
   {
     T lenProduct = norm(org) * norm(dest);
 
@@ -710,24 +701,25 @@ namespace vector
 
     T f = dot(org, dest) / lenProduct;
     f = std::min(std::max(f, -one<T>()), one<T>());
-    return std::acos(f) * 180.0 / 3.14159265;
+    return T(std::acos(f) * 180.0 / 3.14159265);
   }
 
-  template <typename T, uint32_t n>
-  inline Vector<T, n> reflect(Vector<T, n> const &v, Vector<T, n> const &normal)
+  template <typename T, size_t n>
+  Vector<T, n> reflect(Vector<T, n> const &v, Vector<T, n> const &normal)
   {
     return v - (T(2) * dot(v, normal) * normal);
   }
 }
 
-template <typename T, uint32_t n>
-inline std::ostream& operator<<(std::ostream& os, Vector<T, n> const& v)
+template <typename T, size_t n>
+std::ostream& operator<<(std::ostream& os, Vector<T, n> const& v)
 {
-  os << "Vector";
-  for (uint32_t i = 0; i < n; ++i)
+  os << "Vector(" << v[0];
+  for (size_t i = 1; i < n; ++i)
     {
-      std::cout << ' ' << v[i];
+      os << ", " << v[i];
     }
+  os << ')';
   return os;
 }
 
@@ -735,21 +727,21 @@ inline std::ostream& operator<<(std::ostream& os, Vector<T, n> const& v)
 // Typedefs for the most common types and dimensions
 // *************************************************************************************************
 
-typedef Vector<bool, 2U> Vector2b;
-typedef Vector<bool, 3U> Vector3b;
-typedef Vector<bool, 4U> Vector4b;
+typedef Vector<bool, 2_z> Vector2b;
+typedef Vector<bool, 3_z> Vector3b;
+typedef Vector<bool, 4_z> Vector4b;
 
-typedef Vector<int32_t, 2U> Vector2i;
-typedef Vector<int32_t, 3U> Vector3i;
-typedef Vector<int32_t, 4U> Vector4i;
+typedef Vector<int32_t, 2_z> Vector2i;
+typedef Vector<int32_t, 3_z> Vector3i;
+typedef Vector<int32_t, 4_z> Vector4i;
 
-typedef Vector<float, 2U> Vector2f;
-typedef Vector<float, 3U> Vector3f;
-typedef Vector<float, 4U> Vector4f;
+typedef Vector<float, 2_z> Vector2f;
+typedef Vector<float, 3_z> Vector3f;
+typedef Vector<float, 4_z> Vector4f;
 
-typedef Vector<double, 2U> Vector2g;
-typedef Vector<double, 3U> Vector3g;
-typedef Vector<double, 4U> Vector4g;
+typedef Vector<double, 2_z> Vector2g;
+typedef Vector<double, 3_z> Vector3g;
+typedef Vector<double, 4_z> Vector4g;
 
 #  undef DEFINE_UNARY_OPERATOR
 #  undef DEFINE_BINARY_OPERATORS
