@@ -23,6 +23,18 @@ If you are interested by simulation of plant growth see :
 
 ## Design Patterns
 
+My personal implementation of some design patterns because all examples I found
+on internet do not respond to concrete cases. For example:
+- Model-View-Presenter is pure Android design pattern and I could not find one
+  nice and simple implementation in C++, GTKmm.
+- Observer nobody in blogs seems to care about the case where the Observer is
+  destroyed before the Observable.
+
+### Observer
+
+Safe observer managing the case where the Observer can be destroyed before the
+Observable.
+
 ### MVC-MVP
 
 Learning how to implement design pattern Model-View-Controller (MVC) and a
