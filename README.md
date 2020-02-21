@@ -35,6 +35,10 @@ on internet do not respond to concrete cases. For example:
 Safe observer managing the case where the Observer can be destroyed before the
 Observable.
 
+Note: Personally I would use [libsigc++](https://developer.gnome.org/libsigc++-tutorial/stable/index.html)
+instead of implementing my own Observer/Listener class. This lib allows you to
+add signals/slots (similarly to Qt). I give an example of this lib.
+
 ### MVC-MVP
 
 Learning how to implement design pattern Model-View-Controller (MVC) and a
