@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<language id="logs" name="Lecrapouille Logs" version="2.0" _section="Source">
+  <metadata>
+    <property name="mimetypes">text/plain</property>
+    <property name="globs">*.log</property>
+  </metadata>
+
+  <styles>
+    <style id="debug"         name="Debug"         map-to="logs:debug"/>
+    <style id="information"   name="Information"   map-to="logs:information"/>
+    <style id="warning"       name="Warning"       map-to="logs:warning"/>
+    <style id="failure"       name="Failure"       map-to="logs:failure"/>
+    <style id="error"         name="Error"         map-to="logs:error"/>
+    <style id="throw"         name="Throw"         map-to="logs:throw"/>
+    <style id="catch"         name="Catch"         map-to="logs:catch"/>
+    <style id="fatal"         name="Fatal"         map-to="def:error"/>
+  </styles>
+
+  <default-regex-options case-sensitive="true"/>
+
+  <definitions>
+    <context id="logs" class="no-spell-check">
+      <include>
+        <context id="debug" style-ref="debug" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[DEBUG\]</start>
+        </context>
+
+        <context id="information" style-ref="information" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[INFO\]</start>
+        </context>
+
+        <context id="warning" style-ref="warning" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[WARNING\]</start>
+        </context>
+
+        <context id="failure" style-ref="failure" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[FAILURE\]</start>
+        </context>
+
+        <context id="error" style-ref="error" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[ERROR\]</start>
+        </context>
+
+        <context id="throw" style-ref="throw" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[THROW\]</start>
+        </context>
+
+        <context id="catch" style-ref="catch" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[CATCH\]</start>
+        </context>
+
+        <context id="fatal" style-ref="fatal" end-at-line-end="true" class-disabled="no-spell-check">
+          <start>^.*\[FATAL\]</start>
+        </context>
+
+      </include>
+    </context>
+  </definitions>
+</language>
