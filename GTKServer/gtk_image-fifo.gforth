@@ -1,0 +1,77 @@
+\ ==============================================================================
+
+fpath path= /home/qq/ffl/|./
+include ffl/gsv.fs
+
+s" /tmp/gtk-server.cfg" s" /tmp/fifo" gsv+open 0= [IF]
+
+  : event>widget   ( c-addr u -- n = Convert the event string to a widget id )
+    0. 2swap >number 2drop d>s
+  ;
+
+  : zstring ( *str len -- *str ) over + 1- 0 swap C! ;
+
+  0 value WIN
+  0 value IMAGE
+  0 value GDKWIN
+  0 value PIX
+  0 value GC
+  ( 0 value NULL )
+  0 value COLOR
+
+  : qq
+
+    \ Init the GUI
+    gtk_init
+    GTK_WINDOW_TOPLEVEL gtk_window_new to WIN
+    s" QQ" WIN gtk_window_set_title
+    350 300 WIN gtk_widget_set_size_request
+    1 WIN gtk_window_set_position
+    0 WIN gtk_window_set_resizable
+    gtk_image_new to IMAGE
+    IMAGE WIN gtk_container_add
+    WIN      gtk_widget_show_all
+
+    \ Create the pixmap
+    IMAGE gtk_widget_get_parent_window to GDKWIN
+    -1 350 300 GDKWIN gdk_pixmap_new to PIX
+    PIX gdk_gc_new to GC
+    ( NULL ) PIX IMAGE gtk_image_set_from_pixmap
+    16 g_malloc to COLOR
+
+    \ White window
+    COLOR s" #ffffff" ( zstring ) gdk_color_parse
+    COLOR GC gdk_gc_set_rgb_bg_color
+    COLOR GC gdk_gc_set_rgb_fg_color
+    350 300 0 0 1 GC PIX gdk_draw_rectangle
+
+    \ Black circle
+    COLOR s" #000000" gdk_color_parse
+    COLOR GC gdk_gc_set_rgb_fg_color
+    23000 0 290 290 0 5 0 GC PIX gdk_draw_arc
+
+    \ Red rectangle
+    COLOR s" #ff0000" gdk_color_parse
+    COLOR GC gdk_gc_set_rgb_fg_color
+    35 30 0 0 1 GC PIX gdk_draw_rectangle
+
+    BEGIN
+      s" WAIT" gtk_server_callback
+      event>widget CASE
+        WIN         OF true ENDOF
+        false swap
+      ENDCASE
+    UNTIL
+
+    0 gtk_exit
+  ;
+
+  qq
+  gsv+close drop
+
+[ELSE]
+  .( No gtk-server fifo, is the gtk-server running ? ) cr
+[THEN]
+
+
+\ ==============================================================================
