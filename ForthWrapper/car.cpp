@@ -1,4 +1,12 @@
 /*
+Code based on the original code https://github.com/miguelleitao/btosg
+and modified to add a very basic Forth wrapper on btosg library (grep QQ tags).
+Compilation: Replace the file btosg/tree/master/examples/car.cpp but his one
+and use the btosg Makefile for compiling examples.
+Run type on you console the following command:
+./carY car: 800 setMass setName MyCar up 3 "*" coord
+
+
 	car.cpp
 	Miguel Leitao, 2012
 
@@ -38,16 +46,80 @@ btosgWorld myWorld;
 
 btosgBox *myBox;
 
+// QQ
+#include <functional>
+#include <map>
+#include <ctype.h>
 
+// QQ Reuse my stack class form my personal Forth interpreter
+#include "Stack.hpp"
 
-btosgVehicle *myVehicle;
+// QQ Dirty extension of the base stack to use pointers.
+// Dynamic cast is used to avoid bad casting. You can replace
+// assert by throw.
+namespace forth
+{
+template<typename T>
+class ExtStack: public Stack<T>
+{
+public:
+
+    ExtStack(const char *name)
+        : Stack<T> (name)
+    {}
+
+    // Remove and return the top of stack element.
+    template<class U>
+    U pop_ptr()
+    {
+        U ptr = dynamic_cast<U>(*(--Stack<T>::sp));
+        assert((ptr != nullptr) && "pop: Incompatible dynamic cast");
+        return ptr;
+    }
+
+    // Return the top of stack element (TOS).
+    template<class U>
+    U tos_ptr()
+    {
+        U ptr = dynamic_cast<U>(*(Stack<T>::sp - 1));
+        assert((ptr != nullptr) && "pick: Incompatible dynamic cast");
+        return ptr;
+    }
+
+    // Pick the nth element from TOS.
+    template<class U>
+    U pick_ptr(int const nth)
+    {
+        U ptr = dynamic_cast<U>(*(Stack<T>::sp - nth - 1));
+        assert((ptr != nullptr) && "tos: Incompatible dynamic cast");
+        return ptr;
+    }
+};
+}
+
+// QQ Basic Forth
+forth::ExtStack<btosgObject*> OS("btosgObject stack");
+forth::Stack<double> DS("data stack");
+using btosgDictionary = std::map<std::string, std::function<void()>>;
+btosgDictionary dictionary;
+int IP = 1; // Interpretation Pointer.
+char** g_argv; // Words to excute for command line
+
 
 // class to handle events
+// QQ modified because in the original code it directly use a global variable
 class EventHandler : public osgGA::GUIEventHandler
 {
 public:
+
+    // QQ Remove global variable access
+    void track(btosgVehicle* tracked) { m_tracked = tracked; }
+
+    // QQ modified to not track a global variable
     bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
     {
+        if (m_tracked == nullptr) return false;
+
         osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>(&aa);
         if (!viewer) return false;
         switch(ea.getEventType())
@@ -55,26 +127,26 @@ public:
         case(osgGA::GUIEventAdapter::KEYDOWN):
             switch ( ea.getKey() ) {
             case osgGA::GUIEventAdapter::KEY_Down:
-                myVehicle->vehicle->applyEngineForce(-1500, 2);
-                myVehicle->vehicle->applyEngineForce(-1500, 3);
+                m_tracked->vehicle->applyEngineForce(-1500, 2);
+                m_tracked->vehicle->applyEngineForce(-1500, 3);
                 return false;
             case osgGA::GUIEventAdapter::KEY_Up:
-                myVehicle->vehicle->applyEngineForce(1500, 2);
-                myVehicle->vehicle->applyEngineForce(1500, 3);
+                m_tracked->vehicle->applyEngineForce(1500, 2);
+                m_tracked->vehicle->applyEngineForce(1500, 3);
                 return false;
             case osgGA::GUIEventAdapter::KEY_Left:
-                myVehicle->vehicle->setSteeringValue(btScalar(0.4), 0);
-                myVehicle->vehicle->setSteeringValue(btScalar(0.4), 1);
+                m_tracked->vehicle->setSteeringValue(btScalar(0.4), 0);
+                m_tracked->vehicle->setSteeringValue(btScalar(0.4), 1);
                 return false;
             case osgGA::GUIEventAdapter::KEY_Right:
-                myVehicle->vehicle->setSteeringValue(btScalar(-0.4), 0);
-                myVehicle->vehicle->setSteeringValue(btScalar(-0.4), 1);
+                m_tracked->vehicle->setSteeringValue(btScalar(-0.4), 0);
+                m_tracked->vehicle->setSteeringValue(btScalar(-0.4), 1);
                 return false;
             case 'b':
             case '0':
             case osgGA::GUIEventAdapter::KEY_Control_R:
-                myVehicle->vehicle->setBrake(10000, 2);
-                myVehicle->vehicle->setBrake(10000, 3);
+                m_tracked->vehicle->setBrake(10000, 2);
+                m_tracked->vehicle->setBrake(10000, 3);
                 return false;
             }
             break;
@@ -82,25 +154,25 @@ public:
             switch ( ea.getKey() ) {
             case osgGA::GUIEventAdapter::KEY_Down:
             case osgGA::GUIEventAdapter::KEY_Up:
-                myVehicle->vehicle->applyEngineForce(0, 2);
-                myVehicle->vehicle->applyEngineForce(0, 3);
+                m_tracked->vehicle->applyEngineForce(0, 2);
+                m_tracked->vehicle->applyEngineForce(0, 3);
                 return false;
             case osgGA::GUIEventAdapter::KEY_Left:
             case osgGA::GUIEventAdapter::KEY_Right:
-                myVehicle->vehicle->setSteeringValue(btScalar(0), 0);
-                myVehicle->vehicle->setSteeringValue(btScalar(0), 1);
+                m_tracked->vehicle->setSteeringValue(btScalar(0), 0);
+                m_tracked->vehicle->setSteeringValue(btScalar(0), 1);
                 return false;
             case '0':
             case 'b':
             case osgGA::GUIEventAdapter::KEY_Control_R:
-                myVehicle->vehicle->setBrake(5, 2);
-                myVehicle->vehicle->setBrake(5, 3);
+                m_tracked->vehicle->setBrake(5, 2);
+                m_tracked->vehicle->setBrake(5, 3);
                 return false;
             case 'S':
                 std::cout << "tecla S" << std::endl;
                 return false;
             case 'i':
-                myVehicle->printInfo();
+                m_tracked->printInfo();
                 break;
             case 'f':
                 std::cout << "adding force" << std::endl;
@@ -110,12 +182,12 @@ public:
             case 'F':
                 std::cout << "adding Force" << std::endl;
 
-                myVehicle->vehicle->applyEngineForce(500, 2);
-                myVehicle->vehicle->applyEngineForce(500, 3);
+                m_tracked->vehicle->applyEngineForce(500, 2);
+                m_tracked->vehicle->applyEngineForce(500, 3);
 
                 int i;
-                for( i=0 ; i<myVehicle->vehicle->getNumWheels() ; i++) {
-                    btWheelInfo& iWheel = myVehicle->vehicle->getWheelInfo(i);
+                for( i=0 ; i<m_tracked->vehicle->getNumWheels() ; i++) {
+                    btWheelInfo& iWheel = m_tracked->vehicle->getWheelInfo(i);
                     printf(" wheel %d, radius %f, rotation %f, eforce %f, steer %f\n",
                            i, iWheel.m_wheelsRadius, iWheel.m_rotation, iWheel.m_engineForce,iWheel.m_steering);
                 }
@@ -136,6 +208,10 @@ public:
         }
         return true;
     }
+
+private:
+
+    btosgVehicle* m_tracked = nullptr; // QQ should be btosgObject*
 };
 
 
@@ -184,90 +260,140 @@ public:
     BlockBlue(float x, float z) : BlockBlue(x,3.,z) {};
 };
 
-int main()
+// QQ Forth primitives
+static void createCar()
+{
+    OS.push(new btosgVehicle(&myWorld));
+    myWorld.addObject(OS.tos());
+}
+
+static void setMass()
+{
+    OS.tos()->setMass(DS.pop());
+}
+
+static void setName()
+{
+    OS.tos()->setName(g_argv[++IP]);
+}
+
+static void times()
+{
+    DS.tos() *= DS.pop();
+}
+
+static void add()
+{
+    DS.tos() += DS.pop();
+}
+
+static void UpCoord()
+{
+    DS.push(0.0); // x
+    DS.push(0.0); // y
+    DS.push(1.0); // z
+}
+
+static void setCoord()
+{
+    double x = DS.pop();
+    double y = DS.pop();
+    double z = DS.pop();
+    OS.tos()->setPosition(x, y, z);
+}
+
+// QQ Create basic Forth dictionary
+void create_dictionary(btosgDictionary& dictionary)
+{
+    dictionary =
+    {
+        { "car:", createCar },
+        { "setMass", setMass },
+        { "setName", setName },
+        { "up", UpCoord },
+        { "coord", setCoord },
+        { "*", times },
+        { "+", add },
+    };
+}
+
+// QQ is the given string (word) a number ? If yes return its value + true
+static bool isInteger(std::string const& word, int& val)
+{
+    bool isNumber = true;
+    for(std::string::const_iterator k = word.begin(); k != word.end(); ++k)
+        isNumber = (isNumber && isdigit(*k));
+
+    if (isNumber)
+        val = strtol(word.c_str(), nullptr, 10);
+
+    return isNumber;
+}
+
+// QQ Interpret a Forth script given on the command line
+bool parse(btosgDictionary& dictionary, int argc, char* argv[])
+{
+    g_argv = argv; // global access
+    int number;
+
+    std::cout << "Running command line script:" << std::endl;
+    for (IP = 1; IP < argc; ++IP)
+    {
+        const char* word = argv[IP];
+
+        std::cout << "Forth: Execute word '" << word << "'" << std::endl;
+        auto it = dictionary.find(word);
+        if (it != dictionary.end())
+        {
+            it->second(); // execute its definition
+        }
+        else if (isInteger(word, number))
+        {
+            std::cout << "Is int ? " << word << std::endl;
+            DS.push(number);
+        }
+        else
+        {
+            std::cerr << "Forth: Unknown word '" << word
+                      << "'. Abort !" << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int main(int argc, char* argv[])
 {
     btosgVec3 up(0., 0., 1.);
-#ifdef _UP_
-    up = btosgVec3(_UP_);
-#endif
     btosgVec3 gravity = up*-9.8;
     myWorld.dynamic->setGravity(gravity);
 
-    // Car
-    myVehicle = new btosgVehicle(&myWorld);
-    myVehicle->setPosition(btosgVec3(up*3.));
-    myVehicle->setName("Vehicle");
-    myVehicle->setMass(800.);
-    myWorld.addObject( myVehicle );
-    myVehicle->printInfo();
+    // QQ
+    create_dictionary(dictionary);
 
-    {
-        BlockGreen *myBlock;
-        myBlock = new BlockGreen(4.,-4.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockGreen(6.,5.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockGreen(0.,0.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockGreen(9.,5.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockGreen(10.,1.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockGreen(-11.,6.);
-        myWorld.addObject(myBlock);
-    }
-    {
-        BlockRed *myBlock;
-        myBlock = new BlockRed(4.,4.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockRed(7.,5.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockRed(-8.,5.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockRed(9.,-5.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockRed(10.,-6.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockRed(-12.,6.);
-        myWorld.addObject(myBlock);
-    }
+    // QQ interpret the argv. Example:
+    // "car:" "800" "setMass" "setName" "MyCar" "up" "3" "*" "coord"
+    if (!parse(dictionary, argc, argv))
+        return EXIT_FAILURE;
 
-    {
-        BlockBlue *myBlock;
-        myBlock = new BlockBlue(4.,-4.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockBlue(7.5,6.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockBlue(-8.,-5.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockBlue(9.,5.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockBlue(11.,-7.);
-        myWorld.addObject(myBlock);
-        myBlock = new BlockBlue(-13.,7.);
-        myWorld.addObject(myBlock);
-    }
+    // QQ Create a car.
+    // The following script "car: 800 setMass setName MyCar up 3 * coord"
+    // will do the same thing that commented lines.
 
-    // Wheels
-    osg::ref_ptr<osg::Material> matCylinder = new osg::Material;
-    matCylinder->setAmbient (osg::Material::FRONT_AND_BACK, osg::Vec4(0.0, 0.,  0.,  1.0));
-    matCylinder->setDiffuse (osg::Material::FRONT_AND_BACK, osg::Vec4(0.6, 0.4, 0.1, 1.0));
-    matCylinder->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0.,  0.,  0.,  1.0));
-    matCylinder->setShininess(osg::Material::FRONT_AND_BACK, 64);
+    //OS.push(new btosgVehicle(&myWorld));
+    btosgVehicle *myVehicle = OS.tos_ptr<btosgVehicle*>();
+    //myVehicle->setPosition(btosgVec3(up*3.));
+    //myVehicle->setName("Vehicle");
+    //myVehicle->setMass(800.);
+    //myWorld.addObject(myVehicle);
 
     // Plane
     btosgPlane *myRamp = new btosgPlane(osg::Vec3(50.,50.,50.) - up*50.);
     myRamp->setPosition(0.,0.,0.);
-    myWorld.addObject( myRamp );
     myRamp->setName("Ramp");
     myRamp->body->setFriction(100.);
-    osg::ref_ptr<osg::Material> matRamp = new osg::Material;
-    matRamp->setAmbient (osg::Material::FRONT_AND_BACK, osg::Vec4(0., 0., 0., 1.0));
-    matRamp->setDiffuse (osg::Material::FRONT_AND_BACK, osg::Vec4(0.7, 0.8, 0.0, 1.0));
-    matRamp->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1.0));
-    matRamp->setShininess(osg::Material::FRONT_AND_BACK, 64);
-    myRamp->setMaterial(matRamp);
-
+    myWorld.addObject( myRamp );
 
     // Creating the viewer
     osgViewer::Viewer viewer ;
@@ -278,16 +404,9 @@ int main()
     viewer.getCamera()->setViewMatrix(matrix);
 
     // add the Event handler
-    viewer.addEventHandler(new EventHandler());
-
-    // Light
-    osg::ref_ptr<osg::LightSource> ls = new osg::LightSource;
-    ls->getLight()->setPosition(osg::Vec4(2.5,-10+30*up[1],-10+30.*up[2],1.));
-    ls->getLight()->setAmbient(osg::Vec4(0.1, 0.1, 0.1, 1.0));
-    ls->getLight()->setDiffuse(osg::Vec4(1.0, 1.0, 1.0, 1.0));
-    ls->getLight()->setSpecular(osg::Vec4(0.2, 0.2, 0.2, 1.0));
-    myWorld.scene->addChild(ls.get());
-
+    EventHandler* eh = new EventHandler();
+    eh->track(myVehicle); // QQ track the desired vehicle
+    viewer.addEventHandler(eh);
     viewer.setSceneData( myWorld.scene );
 
     osg::ref_ptr<osgGA::TrackballManipulator> manipulator = new osgGA::TrackballManipulator;
@@ -323,5 +442,6 @@ int main()
             ResetFlag = 0;
         }
     }
-}
 
+    return EXIT_SUCCESS;
+}
