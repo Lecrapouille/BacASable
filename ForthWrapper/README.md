@@ -2,11 +2,15 @@ This folder is a proof of concept (POC) on how Forth can wrap a C++ library.
 
 This code source is based on https://github.com/udexon/btosg which is a fork of https://github.com/miguelleitao/btosg in which forth is used as wrapper for high level libraries in different langages (C++, JS ..).
 
-To compile my POC code. You will have to follow the following steps:
-- git clone https://github.com/miguelleitao/btosg
-- replace the btosg/examples/car.cpp by mine. You can grep for tags `QQ` inside the code to see my adds or this [diff](https://github.com/Lecrapouille/BacASable/commit/d0187248f08880649e633fd298447b8bfe68aab4#diff-732ce8b2e88caadf208a672d3d689bea756f24711718fb5da5eb35272bab3175)
-- Copy the stack.hpp file on the btosg/examples/ folder.
-- Compile the example (using the btosg makefile): `cd btosg/examples; make`
+There is two versions:
+- A C++11 but you'll have to create manually all stacks that you need. I'm using dynamic_cast for checking pointer types. dynamic_cast is not liked by developers since it needs RTTI adding extra information which can slow down performences.
+- A C++14 using template variables creating automatically all stacks that you need.
+
+To compile my POC code you will have to follow the following steps:
+- git clone https://github.com/miguelleitao/btosg and go to the `cd btosg/examples/` folder.
+- Replace the btosg/examples/car.cpp by mine. You can grep for tags `QQ` inside the code to see my adds. Note that I did not care about deleting class instances since this is a POC. I recommend you to use C++ smart pointers instead.
+- Adapt the Makefile to replace `c++11` by `c++14`.
+- Compile the example (using the btosg makefile): `make`
 - Run the application with the following command line: `./carY car: 800 setMass setName MyCar up 3 "*" coord`
 
 Explanation:
