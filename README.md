@@ -69,3 +69,7 @@ Some *.lang files for my personal projects inspired by https://artisan.karma-lab
 ## GTK+2 with GTK-server
 
 Bash script to launch GTK+2 application and GTK-server https://www.gtk-server.org/. Initial step before making the portage for Forth application.
+
+## Prolog
+
+Learning Prolog. Implement graph theory that could be used inside SimTaDyn.
