@@ -64,6 +64,10 @@ Test union structure for a Forth project https://github.com/Lecrapouille/SimFort
 
 Mimic C# properties.
 
+## Unity Transform: local position vs. world position
+
+Point of view code implementation.
+
 ## Gedit syntax highlighting
 
 Some *.lang files for my personal projects inspired by https://artisan.karma-lab.net/faire-todo-lists-gedit
