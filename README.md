@@ -60,6 +60,10 @@ Test a basic wrapper for notifications through condition variables.
 
 Test union structure for a Forth project https://github.com/Lecrapouille/SimForth. I dislike the idea of manipulating two separeted stacks: integer and float. Use a single one and make the operator change the type in the same way than OCaml operators `+` and `+.`, `int_of_float`.
 
+### C# Properties
+
+Mimic C# properties.
+
 ## Gedit syntax highlighting
 
 Some *.lang files for my personal projects inspired by https://artisan.karma-lab.net/faire-todo-lists-gedit
