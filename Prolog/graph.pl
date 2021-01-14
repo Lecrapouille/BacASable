@@ -14,10 +14,11 @@ node(7). % g
 node(8). % h
 
 % Directed graph:
-%  a --- b --- e
+%  a --> b ---> e
+%  ^           /
 %   \         /
-%    \       /
-%     c --- d --- f
+%    \       +
+%     c <-- d --> f
 %            \
 %             \
 %     h        g
@@ -70,15 +71,14 @@ supp(N) :-
 % chemin(X,Y) :- arc(Z,Y), arc(X,Z), !.
 % chemin(X,Y) :- arc(X,Z), arc(U,Y), chemin(Z,U), !.
 
-% Chemin de longeur 0: node
+% Path of length 0 is a node
 chemin(X,X,0) :- node(X).
-% Chemin de longeur 1: arc
+% Path of length 1 is an arc
 chemin(X,Y,1) :- arc(X,Y).
-% Chemin de longeur > 1
+% Path of length > 1
 chemin(X,Y,L) :- L > 1, arc(X,Z), M is L - 1, chemin(Z,Y,M).
-% Trouve les cycles
+% Find cycles
 cycle(X,L) :- chemin(X,X,L).
-
 
 % Sparse database
 data(node, 1, 43).

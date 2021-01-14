@@ -30,7 +30,8 @@ Mimic C# properties in C++.
 
 ## Prolog
 
-Learning Prolog. Call Prolog from C++ code. Implement graph theory that could be used inside my personal project SimTaDyn.
+Learning programming Prolog. Learning how to call Prolog from C++ code. Implementing ultra basic Prolog routines based
+on graph theory that could be used inside my personal project SimTaDyn instead of heavy C++ class and code.
 
 ## Forth Wrapper
 
