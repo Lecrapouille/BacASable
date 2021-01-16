@@ -74,6 +74,7 @@ on internet do not respond to concrete cases. For example:
 - Observer nobody in blogs seems to care about the case where the Observer is
   destroyed before the Observable.
 - Component pattern for decoupling patterns.
+- Visitor pattern.
 
 #### Observer
 
