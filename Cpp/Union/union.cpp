@@ -55,8 +55,21 @@ public:
     {}
 
     template <typename N>
-    inline void push(N const n) { *(sp++) = n; }
+    inline void push(N const n)
+    {
+        *(sp++) = n;
+    }
+
+    // Inspired by
+    // https://github.com/opentracing/opentracing-cpp/blob/master/include/opentracing/span.h#L174
+    inline void push(std::initializer_list<T> const& list)
+    {
+        for (auto& it: list)
+            *(sp++) = it;
+    }
+
     inline void drop() { --sp; }
+
     //template <typename N>
     //inline N pop() { return *reinterpret_cast<N*>(&((--sp)->f)); }
 
@@ -96,14 +109,17 @@ static Stack<U> s;
 
 int main()
 {
+    std::cout << "Push: " << std::endl;
     s.push(40);
     s.push(5.6f);
+    s.push({ 5.6f, 40, 41, 5.7f});
     s.display(std::cout);
 
-    // Float operation
+    std::cout << "Float operation: " << std::endl;
     s.push(s.pop<float>() + s.pop<float>());
     s.display(std::cout);
 
+    std::cout << "Integer operation: " << std::endl;
     s.push(s.pop<int32_t>() + 50);
     s.display(std::cout);
 
