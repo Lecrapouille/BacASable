@@ -1,0 +1,1 @@
+RuntimePolymorphism2.cpp is a simplification of RuntimePolymorphism1.cpp where in class Object the unique_ptr has been replaced by shared_ptr<const> in the aim to suppress copies. This also suppress explicit copy/move constructor and copy/move operator.

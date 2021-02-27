@@ -16,6 +16,11 @@ an interpreted language.
 
 ## C++
 
+### Runtime Polymorphism
+
+Based on the YT vide "Better Code: Runtime Polymorphism" by Sean Parent.
+https://sean-parent.stlab.cc/papers-and-presentations/#better-code-runtime-polymorphism
+
 ### ConditionVariable
 
 Test a basic wrapper for notifications through condition variables.
