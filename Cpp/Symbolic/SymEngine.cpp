@@ -11,7 +11,7 @@
 using S = SymEngine::RCP<const SymEngine::Basic>;
 
 // https://github.com/symengine/symengine
-// g++ -W -Wall --std=c++11 Symbolic.cpp -o prog -lsymengine -lgmp
+// g++ -W -Wall --std=c++11 SymEngine.cpp -o prog -lsymengine -lgmp
 int main()
 {
     S x = SymEngine::symbol("x");

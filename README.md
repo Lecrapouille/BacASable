@@ -18,7 +18,7 @@ an interpreted language.
 
 ### Symbolic Manipulation
 
-Basic symbolic manipulation for https://github.com/symengine/symengine
+Basic symbolic manipulation in C++.
 
 ### Runtime Polymorphism
 
