@@ -16,6 +16,10 @@ an interpreted language.
 
 ## C++
 
+### Symbolic Manipulation
+
+Basic symbolic manipulation for https://github.com/symengine/symengine
+
 ### Runtime Polymorphism
 
 Based on the YT vide "Better Code: Runtime Polymorphism" by Sean Parent.
