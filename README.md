@@ -16,6 +16,12 @@ an interpreted language.
 
 ## C++
 
+### Unit Tests
+
+Getting fun to mock C functions such as open(), read() to unit tests C function calling them.
+We exploit the behavior of weak symbols by creating mock functions and define C++ mock class
+to use them easily with Google test/mock. See the README in this folder for more details.
+
 ### Symbolic Manipulation
 
 Basic symbolic manipulation in C++.
