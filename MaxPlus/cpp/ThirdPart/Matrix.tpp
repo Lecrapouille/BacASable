@@ -31,7 +31,7 @@ public:
   {
     size_t m = std::min(rows * cols, size_t(initList.size()));
     auto iter = initList.begin();
-    for (size_t i = 0_z; i < m; ++i)
+    for (size_t i = 0u; i < m; ++i)
       {
         m_data[i] = T(*iter);
         ++iter;
@@ -66,7 +66,7 @@ public:
         i = rows * cols;
         while (i--)
           {
-            m_data[i] = (i % (rows + 1_z) == 0) ? one<T>() : zero<T>();
+            m_data[i] = (i % (rows + 1u) == 0) ? one<T>() : zero<T>();
           }
         break;
       default:
@@ -80,9 +80,9 @@ public:
   {
     size_t r = std::min(rows, rowsOther);
     size_t c = std::min(cols, colsOther);
-    for (size_t i = 0_z; i < r; ++i)
+    for (size_t i = 0u; i < r; ++i)
       {
-        for (size_t j = 0_z; j < c; ++j)
+        for (size_t j = 0u; j < c; ++j)
           {
             (*this)[i][j] = T(m[i][j]);
           }
@@ -162,21 +162,21 @@ public:
 };
 
 // Typedefs for the most common types and dimensions
-typedef Matrix<bool, 2_z, 2_z> Matrix22b;
-typedef Matrix<bool, 3_z, 3_z> Matrix33b;
-typedef Matrix<bool, 4_z, 4_z> Matrix44b;
+typedef Matrix<bool, 2u, 2u> Matrix22b;
+typedef Matrix<bool, 3u, 3u> Matrix33b;
+typedef Matrix<bool, 4u, 4u> Matrix44b;
 
-typedef Matrix<int, 2_z, 2_z> Matrix22i;
-typedef Matrix<int, 3_z, 3_z> Matrix33i;
-typedef Matrix<int, 4_z, 4_z> Matrix44i;
+typedef Matrix<int, 2u, 2u> Matrix22i;
+typedef Matrix<int, 3u, 3u> Matrix33i;
+typedef Matrix<int, 4u, 4u> Matrix44i;
 
-typedef Matrix<double, 2_z, 2_z> Matrix22g;
-typedef Matrix<double, 3_z, 3_z> Matrix33g;
-typedef Matrix<double, 4_z, 4_z> Matrix44g;
+typedef Matrix<double, 2u, 2u> Matrix22g;
+typedef Matrix<double, 3u, 3u> Matrix33g;
+typedef Matrix<double, 4u, 4u> Matrix44g;
 
-typedef Matrix<float, 2_z, 2_z> Matrix22f;
-typedef Matrix<float, 3_z, 3_z> Matrix33f;
-typedef Matrix<float, 4_z, 4_z> Matrix44f;
+typedef Matrix<float, 2u, 2u> Matrix22f;
+typedef Matrix<float, 3u, 3u> Matrix33f;
+typedef Matrix<float, 4u, 4u> Matrix44f;
 
 // Overloaded math operators
 #  define DEFINE_UNARY_OPERATOR(op)                                     \
@@ -302,8 +302,8 @@ template <typename T, size_t rows, size_t inner, size_t cols>
 Matrix<T, rows, cols> operator*(Matrix<T, rows, inner> const &a, Matrix<T, inner, cols> const &b)
 {
   Matrix<T, rows, cols> result(zero<T>());
-  for (size_t i = 0_z; i < rows; ++i)
-    for (size_t j = 0_z; j < cols; ++j)
+  for (size_t i = 0u; i < rows; ++i)
+    for (size_t j = 0u; j < cols; ++j)
       for (size_t k = 0; k < inner; ++k)
         result[i][j] += a[i][k] * b[k][j];
   return result;
@@ -544,7 +544,7 @@ namespace matrix
         double max = std::abs(A[i][i]);
         size_t pivot = i;
 
-        for (j = i + 1_z; j < rows; ++j)
+        for (j = i + 1u; j < rows; ++j)
           {
             if (maths::abs(A[j][i]) > max)
               {
@@ -565,20 +565,20 @@ namespace matrix
         // we cannot use == with floats or double !!!!
         if (A[i][i] != zero<T>())
           {
-            for (j = i + 1_z; j < rows; ++j)
+            for (j = i + 1u; j < rows; ++j)
               {
                 A[j][i] = A[j][i] / A[i][i];
-                for (size_t k = i + 1_z; k < rows; ++k)
+                for (size_t k = i + 1u; k < rows; ++k)
                   {
                     A[j][k] = A[j][k] - A[j][i] * A[i][k];
                   }
               }
           }
       }
-    for (i = 0_z; i < rows; ++i)
+    for (i = 0u; i < rows; ++i)
       {
         L[i][i] = one<T>();
-        for (j = 0_z; j < rows; ++j)
+        for (j = 0u; j < rows; ++j)
           {
             if (j < i)
               {
@@ -608,10 +608,10 @@ namespace matrix
     // y = U.x, thus Ly = b
     // solve for y by forward substitution
     y[0] = b[0] / L[0][0];
-    for (size_t i = 1_z; i < rows; ++i)
+    for (size_t i = 1u; i < rows; ++i)
       {
         y[i] = b[i] / L[i][i];
-        for (size_t j = 0_z; j < i; ++j)
+        for (size_t j = 0u; j < i; ++j)
           {
             y[i] -= (L[i][j] * y[j] / L[i][i]);
           }
@@ -619,7 +619,7 @@ namespace matrix
 
     // U.x = y
     // Solve for x by backward substitution
-    size_t r = rows - 1_z;
+    size_t r = rows - 1u;
     solution[r] = y[r] / U[r][r];
 
     size_t i = r;
@@ -651,9 +651,9 @@ namespace matrix
 template <typename T, size_t rows, size_t cols>
 std::ostream& operator<<(std::ostream& os, Matrix<T, rows, cols> const& m)
 {
-  for (size_t i = 0_z; i < rows; ++i)
+  for (size_t i = 0u; i < rows; ++i)
     {
-      for (size_t j = 0_z; j < cols; ++j)
+      for (size_t j = 0u; j < cols; ++j)
         os << m[i][j] << " ";
       os << '\n';
     }

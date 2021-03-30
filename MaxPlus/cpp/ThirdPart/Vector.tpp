@@ -18,7 +18,7 @@
   /*! \brief Empty constructor */                                       \
   Vector()                                                              \
   {                                                                     \
-    static_assert(N >= 2_z, "Minimun dimension for a vector is 2");     \
+    static_assert(N >= 2u, "Minimun dimension for a vector is 2");     \
   }                                                                     \
                                                                         \
   /*! \brief Constructor with initialization list */                    \
@@ -26,7 +26,7 @@
   {                                                                     \
     const size_t m = std::min(static_cast<size_t>(N), initList.size());  /* FIXME cast */                    \
     auto iter = initList.begin();                                       \
-    for (size_t i = 0_z; i < m; ++i)                                    \
+    for (size_t i = 0u; i < m; ++i)                                    \
       {                                                                 \
         m_data[i] = *iter;                                              \
         ++iter;                                                         \
@@ -107,7 +107,7 @@ protected:
 //! \brief Specialization for n = 2
 // *************************************************************************************************
 template <typename T>
-class Vector<T, 2_z>
+class Vector<T, 2u>
 {
 public:
 
@@ -117,13 +117,13 @@ public:
     y = scalar_y;
   }
 
-  VECTOR_DIM(2_z)
+  VECTOR_DIM(2u)
 
 public:
 
   union
   {
-    T m_data[2_z];
+    T m_data[2u];
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -132,55 +132,55 @@ public:
 #pragma GCC diagnostic pop
   };
 
-  const static Vector<T, 2_z> DUMMY;
-  const static Vector<T, 2_z> ZERO;
-  const static Vector<T, 2_z> UNIT_SCALE;
-  const static Vector<T, 2_z> NEGATIVE_UNIT_SCALE;
-  const static Vector<T, 2_z> UNIT_X;
-  const static Vector<T, 2_z> UNIT_Y;
-  const static Vector<T, 2_z> NEGATIVE_UNIT_X;
-  const static Vector<T, 2_z> NEGATIVE_UNIT_Y;
+  const static Vector<T, 2u> DUMMY;
+  const static Vector<T, 2u> ZERO;
+  const static Vector<T, 2u> UNIT_SCALE;
+  const static Vector<T, 2u> NEGATIVE_UNIT_SCALE;
+  const static Vector<T, 2u> UNIT_X;
+  const static Vector<T, 2u> UNIT_Y;
+  const static Vector<T, 2u> NEGATIVE_UNIT_X;
+  const static Vector<T, 2u> NEGATIVE_UNIT_Y;
 };
 
 // Predifined vectors
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::ZERO(zero<T>());
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::UNIT_SCALE(one<T>());
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::NEGATIVE_UNIT_SCALE(-one<T>());
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::UNIT_X(one<T>(), zero<T>());
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::UNIT_Y(zero<T>(), one<T>());
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::NEGATIVE_UNIT_X(-one<T>(), zero<T>());
-template <typename T> const Vector<T, 2_z> Vector<T, 2_z>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>());
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::DUMMY(T(NAN));
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::ZERO(zero<T>());
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::UNIT_X(one<T>(), zero<T>());
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::UNIT_Y(zero<T>(), one<T>());
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::NEGATIVE_UNIT_X(-one<T>(), zero<T>());
+template <typename T> const Vector<T, 2u> Vector<T, 2u>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>());
 
 // *************************************************************************************************
 //! \brief Specialization for n = 3
 // *************************************************************************************************
 template <typename T>
-class Vector<T, 3_z>
+class Vector<T, 3u>
 {
 public:
 
-  Vector(Vector<T, 2_z> const &v, const T scalar_z = zero<T>())
+  Vector(Vector<T, 2u> const &v, const T scalaru = zero<T>())
   {
     x = v.x;
     y = v.y;
-    z = scalar_z;
+    z = scalaru;
   }
 
-  Vector(const T scalar_x, const T scalar_y, const T scalar_z = zero<T>())
+  Vector(const T scalar_x, const T scalar_y, const T scalaru = zero<T>())
   {
     x = scalar_x;
     y = scalar_y;
-    z = scalar_z;
+    z = scalaru;
   }
 
-  VECTOR_DIM(3_z)
+  VECTOR_DIM(3u)
 
 public:
 
   union
   {
-    T m_data[3_z];
+    T m_data[3u];
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -189,38 +189,38 @@ public:
 #pragma GCC diagnostic pop
   };
 
-  const static Vector<T, 3_z> DUMMY;
-  const static Vector<T, 3_z> ZERO;
-  const static Vector<T, 3_z> UNIT_SCALE;
-  const static Vector<T, 3_z> NEGATIVE_UNIT_SCALE;
-  const static Vector<T, 3_z> UNIT_X;
-  const static Vector<T, 3_z> UNIT_Y;
-  const static Vector<T, 3_z> UNIT_Z;
-  const static Vector<T, 3_z> NEGATIVE_UNIT_X;
-  const static Vector<T, 3_z> NEGATIVE_UNIT_Y;
-  const static Vector<T, 3_z> NEGATIVE_UNIT_Z;
+  const static Vector<T, 3u> DUMMY;
+  const static Vector<T, 3u> ZERO;
+  const static Vector<T, 3u> UNIT_SCALE;
+  const static Vector<T, 3u> NEGATIVE_UNIT_SCALE;
+  const static Vector<T, 3u> UNIT_X;
+  const static Vector<T, 3u> UNIT_Y;
+  const static Vector<T, 3u> UNIT_Z;
+  const static Vector<T, 3u> NEGATIVE_UNIT_X;
+  const static Vector<T, 3u> NEGATIVE_UNIT_Y;
+  const static Vector<T, 3u> NEGATIVE_UNIT_Z;
 };
 
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::ZERO(zero<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_SCALE(one<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_SCALE(-one<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_X(one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_Y(zero<T>(), one<T>(), zero<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::UNIT_Z(zero<T>(), zero<T>(), one<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>());
-template <typename T> const Vector<T, 3_z> Vector<T, 3_z>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::DUMMY(T(NAN));
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::ZERO(zero<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::UNIT_X(one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::UNIT_Y(zero<T>(), one<T>(), zero<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::UNIT_Z(zero<T>(), zero<T>(), one<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>());
+template <typename T> const Vector<T, 3u> Vector<T, 3u>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>());
 
 // *************************************************************************************************
 // Specializations for n = 4
 // *************************************************************************************************
 template <typename T>
-class Vector<T, 4_z>
+class Vector<T, 4u>
 {
 public:
 
-  Vector(Vector<T, 3_z> const &v, const T scalar_w = zero<T>())
+  Vector(Vector<T, 3u> const &v, const T scalar_w = zero<T>())
   {
     x = v.x;
     y = v.y;
@@ -228,21 +228,21 @@ public:
     w = scalar_w;
   }
 
-  Vector(const T scalar_x, const T scalar_y, const T scalar_z, const T scalar_w)
+  Vector(const T scalar_x, const T scalar_y, const T scalaru, const T scalar_w)
   {
     x = scalar_x;
     y = scalar_y;
-    z = scalar_z;
+    z = scalaru;
     w = scalar_w;
   }
 
-  VECTOR_DIM(4_z)
+  VECTOR_DIM(4u)
 
 public:
 
   union
   {
-    T m_data[4_z];
+    T m_data[4u];
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -251,32 +251,32 @@ public:
 #pragma GCC diagnostic pop
   };
 
-  const static Vector<T, 4_z> DUMMY;
-  const static Vector<T, 4_z> ZERO;
-  const static Vector<T, 4_z> UNIT_SCALE;
-  const static Vector<T, 4_z> NEGATIVE_UNIT_SCALE;
-  const static Vector<T, 4_z> UNIT_X;
-  const static Vector<T, 4_z> UNIT_Y;
-  const static Vector<T, 4_z> UNIT_Z;
-  const static Vector<T, 4_z> UNIT_W;
-  const static Vector<T, 4_z> NEGATIVE_UNIT_X;
-  const static Vector<T, 4_z> NEGATIVE_UNIT_Y;
-  const static Vector<T, 4_z> NEGATIVE_UNIT_Z;
-  const static Vector<T, 4_z> NEGATIVE_UNIT_W;
+  const static Vector<T, 4u> DUMMY;
+  const static Vector<T, 4u> ZERO;
+  const static Vector<T, 4u> UNIT_SCALE;
+  const static Vector<T, 4u> NEGATIVE_UNIT_SCALE;
+  const static Vector<T, 4u> UNIT_X;
+  const static Vector<T, 4u> UNIT_Y;
+  const static Vector<T, 4u> UNIT_Z;
+  const static Vector<T, 4u> UNIT_W;
+  const static Vector<T, 4u> NEGATIVE_UNIT_X;
+  const static Vector<T, 4u> NEGATIVE_UNIT_Y;
+  const static Vector<T, 4u> NEGATIVE_UNIT_Z;
+  const static Vector<T, 4u> NEGATIVE_UNIT_W;
 };
 
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::DUMMY(T(NAN));
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::ZERO(zero<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_SCALE(one<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_SCALE(-one<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_X(one<T>(), zero<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_Y(zero<T>(), one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_Z(zero<T>(), zero<T>(), one<T>(), zero<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::UNIT_W(zero<T>(), zero<T>(), zero<T>(), one<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>(), zero<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>(), zero<T>());
-template <typename T> const Vector<T, 4_z> Vector<T, 4_z>::NEGATIVE_UNIT_W(zero<T>(), zero<T>(), zero<T>(), -one<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::DUMMY(T(NAN));
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::ZERO(zero<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::UNIT_SCALE(one<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::NEGATIVE_UNIT_SCALE(-one<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::UNIT_X(one<T>(), zero<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::UNIT_Y(zero<T>(), one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::UNIT_Z(zero<T>(), zero<T>(), one<T>(), zero<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::UNIT_W(zero<T>(), zero<T>(), zero<T>(), one<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::NEGATIVE_UNIT_X(-one<T>(), zero<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::NEGATIVE_UNIT_Y(zero<T>(), -one<T>(), zero<T>(), zero<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::NEGATIVE_UNIT_Z(zero<T>(), zero<T>(), -one<T>(), zero<T>());
+template <typename T> const Vector<T, 4u> Vector<T, 4u>::NEGATIVE_UNIT_W(zero<T>(), zero<T>(), zero<T>(), -one<T>());
 
 // *************************************************************************************************
 // Overloaded math operators
@@ -529,7 +529,7 @@ namespace vector
       return zero<T>();
 
     const T k = u[0] / v[0];
-    for (size_t i = 1_z; i < n; ++i)
+    for (size_t i = 1u; i < n; ++i)
       {
         if (!maths::almostEqual(k * v[i], u[i]))
           return T(NAN);
@@ -648,7 +648,7 @@ namespace vector
   }
 
   template <typename T>
-  Vector<T, 3_z> cross(Vector<T, 3_z> const &a, Vector<T, 3> const &b)
+  Vector<T, 3u> cross(Vector<T, 3u> const &a, Vector<T, 3> const &b)
   {
     return
       {
@@ -660,13 +660,13 @@ namespace vector
 
   //! \brief Perpendicular
   template <typename T>
-  Vector<T, 2_z> orthogonal(Vector<T, 2_z> const &a)
+  Vector<T, 2u> orthogonal(Vector<T, 2u> const &a)
   {
     return { -a.y, a.x };
   }
 
   template <typename T>
-  Vector<T, 3_z> orthogonal(Vector<T, 3_z> const &a)
+  Vector<T, 3u> orthogonal(Vector<T, 3u> const &a)
   {
     // Implementation due to Sam Hocevar - see blog post:
     // http://lolengine.net/blog/2013/09/21/picking-orthogonal-Vector-combing-coconuts
@@ -727,21 +727,21 @@ std::ostream& operator<<(std::ostream& os, Vector<T, n> const& v)
 // Typedefs for the most common types and dimensions
 // *************************************************************************************************
 
-typedef Vector<bool, 2_z> Vector2b;
-typedef Vector<bool, 3_z> Vector3b;
-typedef Vector<bool, 4_z> Vector4b;
+typedef Vector<bool, 2u> Vector2b;
+typedef Vector<bool, 3u> Vector3b;
+typedef Vector<bool, 4u> Vector4b;
 
-typedef Vector<int32_t, 2_z> Vector2i;
-typedef Vector<int32_t, 3_z> Vector3i;
-typedef Vector<int32_t, 4_z> Vector4i;
+typedef Vector<int32_t, 2u> Vector2i;
+typedef Vector<int32_t, 3u> Vector3i;
+typedef Vector<int32_t, 4u> Vector4i;
 
-typedef Vector<float, 2_z> Vector2f;
-typedef Vector<float, 3_z> Vector3f;
-typedef Vector<float, 4_z> Vector4f;
+typedef Vector<float, 2u> Vector2f;
+typedef Vector<float, 3u> Vector3f;
+typedef Vector<float, 4u> Vector4f;
 
-typedef Vector<double, 2_z> Vector2g;
-typedef Vector<double, 3_z> Vector3g;
-typedef Vector<double, 4_z> Vector4g;
+typedef Vector<double, 2u> Vector2g;
+typedef Vector<double, 3u> Vector3g;
+typedef Vector<double, 4u> Vector4g;
 
 #  undef DEFINE_UNARY_OPERATOR
 #  undef DEFINE_BINARY_OPERATORS
