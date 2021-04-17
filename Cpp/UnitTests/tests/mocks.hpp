@@ -29,6 +29,16 @@ public:
     }
 
     //--------------------------------------------------------------------------
+    //! \brief We need to restore states to force using the C function back but
+    //! not the mocked method. This is needed, for example, GCOV is calling
+    //! functions such as open and calling the mocked method will make a segfault.
+    //--------------------------------------------------------------------------
+    ~ReadMock()
+    {
+        m_instance = nullptr;
+    }
+
+    //--------------------------------------------------------------------------
     //! \brief Return the instance.
     //! \return Return nullptr if real function was selected or the pointer to
     //! this instance (this) if the mock was selected.
@@ -58,6 +68,11 @@ public:
     OpenMock()
     {
         m_instance = this;
+    }
+
+    ~OpenMock()
+    {
+        m_instance = nullptr;
     }
 
     static OpenMock* instance()
