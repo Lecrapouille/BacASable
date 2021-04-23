@@ -1,5 +1,8 @@
 This folder is a proof of concept (POC) on how Forth can wrap a C++ library.
 
+You can find the youtube video of this code: https://youtu.be/kbVCi5ruCUQ
+And the PowerPoint file used for making this video: https://lecrapouille.github.io/forth/ForthWrapper_CppSymbolicEngine.odp
+
 This code source is based on https://github.com/udexon/btosg which is a fork of https://github.com/miguelleitao/btosg in which forth is used as wrapper for high level libraries in different langages (C++, JS ..).
 
 There is two versions:

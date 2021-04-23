@@ -1,3 +1,5 @@
 *~
 *.o
 *.tar*
+prog
+foo
