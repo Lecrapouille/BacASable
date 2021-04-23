@@ -19,18 +19,4 @@ Links for GINaC:
 
 # Forth with Symbolic Manipulations
 
-See RPN.cpp file.
-
-Command line example:
-
-```
-./prog x y    x x "*" y 2 "*" +    diff x .    4 = x .
-```
-
-Where:
-- `x y` create two symbols `x` and `y`.
-- `x x * y 2 +` create the expression `x^2 + 2 y`.
-- `diff x` does the derivation on `x`.
-- `.` print the expression.
-- `4 = x` affect `4` to `x`.
-- `.` show the result which shall be `8`.
+See folder ../ForthWrapper/CppSymbolicEngine

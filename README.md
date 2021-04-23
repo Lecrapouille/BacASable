@@ -16,6 +16,14 @@ an interpreted language.
 
 ## C++
 
+### Forth Wrapper
+
+Prove of concept implementing an ultra-basic Forth interpreter wrapping C++ API.
+Two examples are given:
+- Wrapping a thin C++ abstraction library integrating the physic engine Bullet and
+the 3D library OpenSceneGraph.
+- Wrapping a C++ symbolic library Ginac.
+
 ### Unit Tests
 
 Getting fun to mock C functions such as open(), read() to unit tests C function calling them.
@@ -47,10 +55,6 @@ Mimic C# properties in C++.
 
 Learning programming Prolog. Learning how to call Prolog from C++ code. Implementing ultra basic Prolog routines based
 on graph theory that could be used inside my personal project SimTaDyn instead of heavy C++ class and code.
-
-## Forth Wrapper
-
-POC Forth wrapping C++ API.
 
 ## Julia
 
