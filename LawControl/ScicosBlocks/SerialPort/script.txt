@@ -1,0 +1,24 @@
+// Se deplacer dans le repertoire local
+cd /Users/crapouille/Desktop/H4H_project/trunk/Software/Applications/Scicos/SerialPort;
+
+// Genere automatiquement un Makefile
+// Remplacer par mon Makefile
+// exec('osx_builder.sce');
+// exec('Linux_builder.sce');
+
+// Compiler ficbhiers *.sci --> *.bin
+genlib('lib_serial', pwd());
+
+// Creer un fichier Scicos 'PortSerie.cosf' avec les blocs diagramme
+create_palette(pwd());
+
+// Charger les librairies *.bin
+load lib;
+
+// Charger les librairies paratgees *.so
+// Parce que exec('osx_builder.sce') est commente, on utilise
+// le fichier H4H_loader.sce;
+// exec loader.sce;
+exec Linux_loader.sce;
+
+
