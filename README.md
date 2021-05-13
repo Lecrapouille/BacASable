@@ -64,13 +64,19 @@ Defining a Max-Plus class in C++ and Julia for Max-Plus algebra.
 More information about this algebra, see https://en.wikipedia.org/wiki/Max-plus_algebra
 My portage to Julia of the Max-Plus Scilab toolbox: https://github.com/Lecrapouille/MaxPlus.jl
 
-## Scilab
+## ScicosLab / NSP (Scilab)
+
+http://www.scicoslab.org/
 
 ### Plant Growth
 
 A student project for generating 3D plants made long yeeeears ago [NSP](https://cermics.enpc.fr/~jpc/nsp-tiddly/mine.html) or [ScicosLab](http://www.scicoslab.org/). Note: ScicosLab is the fork of Scilab (the equivalent of Matlab) and NSP is now replaced by NSP. This is not a serious application. If you are interested by simulation of plant growth read :
 * (fr) http://www.linneenne-lyon.org/depot1/14367.pdf
 * (en) https://hal.inria.fr/file/index/docid/71706/filename/RR-4877.pdf
+
+### Scicos blocks
+
+Some "As it" very old and unmaintained C code for ScicosLab: joystick, camera, UART.
 
 ## Unity
 

@@ -1,0 +1,25 @@
+// A lancer dans Scilab
+//
+// Le nom de la palette dans le menu Scicos
+// n'est pas correcte mais ca marche quand
+// meme.
+//
+// Pour compiler il faut avoir installe la
+// libraw1394 avant et avoir un port FireWire.
+
+
+cd /afs/inria.fr/rocq/home/aoste/qquadrat/;
+
+exec('builder.sce');
+create_palette(pwd());
+load lib;
+exec loader.sce;
+scicos_pal($+1, ["CyCab", "myblock.cosf"]);
+
+scicos ;
+
+
+// A lancer dans un terminal pour effacer tous les
+// fichiers apres ce script Scilab.
+
+rm -fr lib .??* \#* *~ *.a *.o *.la *.lo *.so loader.sce Makelib myblock.cosf names *.bin scicos.cosf .libs
