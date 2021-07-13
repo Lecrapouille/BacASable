@@ -51,6 +51,10 @@ Test union structure for a Forth project https://github.com/Lecrapouille/SimFort
 
 Mimic C# properties in C++.
 
+### OpenCV in C++
+
+Testing some basic functions.
+
 ## Prolog
 
 Learning programming Prolog. Learning how to call Prolog from C++ code. Implementing ultra basic Prolog routines based
