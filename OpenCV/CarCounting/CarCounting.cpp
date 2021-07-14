@@ -6,6 +6,10 @@
 #include <thread>
 #include <chrono>
 
+//******************************************************************************
+//! \brief Return the median value from a vector of data.
+//! \note The vector \c elements will be sorted (side effect).
+//******************************************************************************
 static int median(std::vector<int>& elements)
 {
     std::nth_element(elements.begin(),
@@ -14,7 +18,13 @@ static int median(std::vector<int>& elements)
     return elements[elements.size() / 2u];
 }
 
-// Filtering using the median value pixel along the video duration
+//******************************************************************************
+//! \brief From a set of image return the resulting image holding median values
+//! of pixels.
+//! \param[in] vec vector of image. The size of the vector depends on the video
+//! duration.
+//! \return the median image.
+//******************************************************************************
 static cv::Mat block_median(std::vector<cv::Mat>& vec)
 {
     cv::Mat medianImg(vec[0].rows, vec[0].cols, CV_8UC3, cv::Scalar(0, 0, 0));
@@ -47,14 +57,31 @@ static cv::Mat block_median(std::vector<cv::Mat>& vec)
     return medianImg;
 }
 
+//******************************************************************************
+//! \brief Remove dynamic objects on a video and return the static image. The
+//! camera shall have a fixed position. Algorithm: For each pixel of the video,
+//! we keep the median value along the whole video duration.
+//!
+//! To preserve the memory, each image (640x360) of the video is split into
+//! several blocks (80x90) and stored on a vector. The size of this vector
+//! depends on the video duration. Then, for each pixel of blocks stored in this
+//! vector, we keep the median value of each pixel and we recreate a new block
+//! of image. This new image is then stored at the correct location in the final
+//! image that we name the background image.
+//!
+//! \param cap the video to filter.
+//! \return the static image where dynamic objects have been removed.
+//! \note we can of course save some CPU computations by converting the image
+//! directly in grey and not to compute median on the whole video.
+//******************************************************************************
 static cv::Mat background_estimation(cv::VideoCapture& cap)
 {
     cv::Mat frame, cropped;
-    size_t const S = cap.get(cv::CAP_PROP_FRAME_COUNT); // number of frames
-    size_t const W = cap.get(cv::CAP_PROP_FRAME_WIDTH); // 640
+    size_t const S = cap.get(cv::CAP_PROP_FRAME_COUNT);  // number of frames
+    size_t const W = cap.get(cv::CAP_PROP_FRAME_WIDTH);  // 640
     size_t const H = cap.get(cv::CAP_PROP_FRAME_HEIGHT); // 360
-    size_t const BX = 80u;
-    size_t const BY = 90u;
+    size_t const BX = 80u; // Width of the block
+    size_t const BY = 90u; // Height of the block
 
     std::vector<cv::Mat> blocks(S);
     cv::Mat result(H, W, CV_8UC3, cv::Scalar(0, 0, 0));
@@ -82,7 +109,15 @@ static cv::Mat background_estimation(cv::VideoCapture& cap)
     return result;
 }
 
-// Mask(x,y) = (abs(Image(x,y) - Background(x,y)) > threshold) ? 255 : 0
+//******************************************************************************
+//! \brief Create a mask image by removing the background image on the current
+//! image of the video. For each pixel at position (x,x) we do:
+//! Mask(x,y) = (abs(DynamicImage(x,y) - StaticImage(x,y)) > threshold) ? 255 : 0
+//! \param[in] img: dyanmic image (the current image of the video).
+//! \param[in] bg: static image (background)
+//! \param[in] threshold: value in where pixel of the mask will be 1.
+//! \return The mask image.
+//******************************************************************************
 static cv::Mat create_mask(cv::Mat const& img, cv::Mat const& bg, uint8_t const threshold)
 {
     cv::Mat image;
@@ -103,28 +138,137 @@ static cv::Mat create_mask(cv::Mat const& img, cv::Mat const& bg, uint8_t const 
         }
     }
 
+    return mask;
+}
+
+//******************************************************************************
+//! \brief Helper class defining a zone and count points inside
+//******************************************************************************
+class CountingZone
+{
+public:
+
+    //! \brief Define the zone to watch. A blue rectangle will be draw.
+    void zone(cv::Rect zone_)
+    {
+        m_zone = zone_;
+    }
+
+    //! \brief Is the zone contains the given point ?
+    //! \return true if the point is inside the zone defined by this instance.
+    bool contains(cv::Point2f const& pt)
+    {
+        return m_zone.contains(pt);
+    }
+
+    //! \brief Reset the counter.
+    void begin()
+    {
+        m_count = 0u;
+        m_color = cv::Scalar(255, 0, 0);
+    }
+
+    //! \brief Increment the counter.
+    void incr()
+    {
+        ++m_count;
+        m_color = cv::Scalar(0, 0, 255);
+    }
+
+    //! \brief Increment the number of car if the number of cars has increased
+    //! compared the previous time.
+    //! \note this basic algorithm is not 100% reliable.
+    void end()
+    {
+        if (m_count > m_prev_count)
+        {
+            ++m_cars;
+        }
+        m_prev_count = m_count;
+    }
+
+    //! \brief Draw the number the zone and the number of cars
+    void draw(cv::Mat& frame)
+    {
+        cv::Scalar color;
+        cv::rectangle(frame, m_zone, m_color, 5);
+        cv::putText(frame, std::to_string(m_cars),
+                    cv::Point(m_zone.x, m_zone.y - 10),
+                    cv::FONT_HERSHEY_COMPLEX_SMALL, 2,
+                    cv::Scalar(255, 255, 255), 2);
+        m_color = cv::Scalar(255, 0, 0);
+    }
+
+private:
+
+    size_t m_cars = 0u;
+    size_t m_count = 0u;
+    size_t m_prev_count = 0u;
+    cv::Rect m_zone;
+    cv::Scalar m_color = cv::Scalar(255, 0, 0);
+};
+
+//******************************************************************************
+//! \brief Detect dynamic objects and count them
+//! \note We can save some CPU computations by reducing directly the mask to the
+//! desired areas.
+//******************************************************************************
+static void detect_cars(cv::Mat& frame, cv::Mat const& mask, std::vector<CountingZone>& counters)
+{
+    // Do some treatments on the mask
     //cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5,5));
     //cv::Mat maskErode;
     //cv::erode(mask, maskErode, kernel);
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5,5));
     cv::dilate(mask, mask, kernel, cv::Point(-1,-1), 3);
-
     cv::imshow("Mask", mask);
-    cv::waitKey(1);
-    return mask;
+
+    // Find dynamic objects
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(mask, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // Show dynamic objects
+    std::vector<cv::Point2f> centers(contours.size());
+    std::vector<float> radius(contours.size());
+    for (size_t i = 0; i < contours.size(); ++i)
+    {
+        cv::drawContours(frame, contours, int(i), cv::Scalar(255,0,0), 2, cv::LINE_8, hierarchy, 0);
+        cv::minEnclosingCircle(contours[i], centers[i], radius[i]);
+    }
+
+    for (auto& counter: counters)
+    {
+        counter.begin();
+        for (size_t i = 0u; i < contours.size(); ++i)
+        {
+            if ((radius[i] > 20.0f) && (counter.contains(centers[i])))
+            {
+                cv::circle(frame, centers[i], 5, cv::Scalar(0,0,255), 10);//cv::FILLED);
+                counter.incr();
+            }
+        }
+        counter.end();
+    }
 }
 
+//******************************************************************************
 // g++ -W -Wall --std=c++11 CarCounting.cpp -o CarCounting `pkg-config --libs --cflags opencv`
+//******************************************************************************
 int main()
 {
+    cv::Mat background, frame, mask;
+
+    // Open the video of driving cars on a highway.
     cv::VideoCapture cap("autoroute.mp4");
     if (!cap.isOpened())
     {
         std::cerr << "Error opening video file" << std::endl;
         return EXIT_FAILURE;
     }
+    //int rate = static_cast<int>(1000.0 / cap.get(vc::CAP_PROP_FPS));
 
-    cv::Mat background;
+    // Load the image of the highway if present, else create it.
     background = cv::imread("background.jpg");
     if (background.empty())
     {
@@ -132,52 +276,27 @@ int main()
         cv::imwrite("background.jpg", background);
     }
 
-    // TODO: dirty to be clean !
-
-    size_t cars = 0u;
-    size_t count = 0u; size_t prev_count = 0u;
-    uint8_t seuil = 50u;
-    cv::Mat frame, mask;
-    size_t const S = cap.get(cv::CAP_PROP_FRAME_COUNT);
-    for (size_t i = 0u; i < S; ++i)
+    // Count driving cars on a 3-ways highway
+    std::vector<CountingZone> counters(3);
+    counters[0].zone(cv::Rect(cv::Point(75, 315), cv::Point(214, 360)));
+    counters[1].zone(cv::Rect(cv::Point(215, 315), cv::Point(344, 360)));
+    counters[2].zone(cv::Rect(cv::Point(345, 315), cv::Point(500, 360)));
+    size_t i = cap.get(cv::CAP_PROP_FRAME_COUNT);
+    while (i--)
     {
         cap.read(frame);
+        mask = create_mask(frame, background, 50u);
+        detect_cars(frame, mask, counters);
 
-        std::vector<std::vector<cv::Point>> contours;
-        std::vector<cv::Vec4i> hierarchy;
-        mask = create_mask(frame, background, seuil);
-        cv::findContours(mask, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-        count = 0u;
-
-        std::vector<cv::Point2f> centers(contours.size());
-        std::vector<float> radius(contours.size());
-        for (size_t i = 0; i < contours.size(); ++i)
+        for (auto& counter: counters)
         {
-            cv::drawContours(frame, contours, int(i), cv::Scalar(255,0,0), 2, cv::LINE_8, hierarchy, 0);
-            cv::minEnclosingCircle(contours[i], centers[i], radius[i]);
+            counter.draw(frame);
         }
+        imshow("Highway", frame);
+        cv::waitKey(1);
 
-        cv::Rect r(cv::Point(70, 315), cv::Point(500, 360));
-        cv::rectangle(frame, r, cv::Scalar(255, 0, 0), 5);
-        for (size_t i = 0u; i < contours.size(); ++i)
-        {
-            if ((radius[i] > 20.0f) && (r.contains(centers[i])))
-            {
-                cv::circle(frame, centers[i], 5, cv::Scalar(0,0,255), 10);//cv::FILLED);
-                count++;
-            }
-        }
-        if (count > prev_count)
-        {
-            cars++;
-        }
-        prev_count = count;
-        cv::rectangle(frame, cv::Point(500, 309), cv::Point(640, 360+35), cv::Scalar(255, 0, 0), cv::FILLED);
-        cv::putText(frame, std::to_string(cars), cv::Point(500+10,315+35), cv::FONT_HERSHEY_COMPLEX_SMALL, 2, cv::Scalar(255, 255, 255), 2);
-
-        imshow("Contours", frame);
-        //cv::waitKey(1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        // TODO: implement a real pause
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
     return EXIT_SUCCESS;
