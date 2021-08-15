@@ -62,6 +62,10 @@ on graph theory that could be used inside my personal project SimTaDyn instead o
 
 ## Julia
 
+### Call C/C++ code
+
+See how from Julia we can call C functions.
+
 ### Max-Plus
 
 Defining a Max-Plus class in C++ and Julia for Max-Plus algebra.
