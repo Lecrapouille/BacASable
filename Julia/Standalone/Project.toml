@@ -1,0 +1,4 @@
+name = "GtkJulia"
+uuid = "0c13b485-724d-49b5-bedb-728327281b9d"
+authors = ["Quentin Quadrat <lecrapouille@gmail.com>"]
+version = "0.1.0"
