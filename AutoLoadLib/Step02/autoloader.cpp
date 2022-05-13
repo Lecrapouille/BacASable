@@ -92,7 +92,10 @@ void checkAndUpdate(std::string const & livefile)
 int main()
 {
   std::cout << "Please edit '" << c_livefile
-            << "' file with your favorite code editor"
+            << "' file with your favorite code editor.\n"
+            << "Each time you will save it after a modification "
+            << "this file will be compiled and the modification "
+            << "will appear on the screen."
             << std::endl;
   while (true)
     {

@@ -3,6 +3,12 @@
 TARGET=autoloader
 DYLIB=liblivecode
 
+################################################################################
+### You can replace by your favorite text editor such gedit, emacs, vi.
+TEXT_EDITOR=xdg-open
+
+################################################################################
+###
 MAKEFLAGS += --no-print-directory
 
 ################################################################################
@@ -18,33 +24,34 @@ endif
 all: $(TARGET) lib
 
 ################################################################################
-### The dynamic library auto-loader
-$(TARGET):
-	@g++ -W -Wall --std=c++11 `pkg-config --cflags --libs gtkmm-3.0` $(TARGET).cpp -o $(TARGET)
+### Compile the dynamic library auto-loader
+$(TARGET): $(TARGET).cpp
+	g++ -W -Wall --std=c++11 $(TARGET).cpp -o $(TARGET) `pkg-config --cflags --libs gtkmm-3.0`
 
 ################################################################################
-### Dynamic library
+### Compile the dynamic library
 .PHONY: lib
-lib:
+lib: lib.c
 ifeq ($(ARCHI),Darwin)
-	@gcc -c -W -Wall lib.c
-	@gcc -dynamiclib -undefined suppress -flat_namespace lib.o -o $(DYLIB).dylib
+	gcc -c -W -Wall lib.c
+	gcc -dynamiclib -undefined suppress -flat_namespace lib.o -o $(DYLIB).dylib
 else ifeq ($(ARCHI),Linux)
-	@gcc -c -W -Wall -fpic lib.c
-	@gcc -shared lib.o -o $(DYLIB).so
+	gcc -c -W -Wall -fpic lib.c
+	gcc -shared lib.o -o $(DYLIB).so
 else ifeq ($(OS),Windows_NT)
-	@gcc -c -W -Wall -fpic lib.c
-	@gcc -shared lib.o -o $(DYLIB).dll -Wl,--out-implib,$(DYLIB).a
+	gcc -c -W -Wall -fpic lib.c
+	gcc -shared lib.o -o $(DYLIB).dll -Wl,--out-implib,$(DYLIB).a
 else
 	error "I dunno how to compile dynamic lib with this architecture"
 endif
-	@rm -fr lib.o
+	rm -fr lib.o
 
 ################################################################################
-### Launch the dynamic library auto-loader
+### Launch the dynamic library auto-loader and launch on the text editor on the
+### observed file.
 .PHONY: launch
 launch: $(TARGET) lib
-	@gedit lib.c &
+	@$(TEXT_EDITOR) lib.c &
 	@./$(TARGET)
 
 ################################################################################
