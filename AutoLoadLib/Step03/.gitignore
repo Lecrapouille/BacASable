@@ -1,0 +1,4 @@
+Autoloader
+*.so
+*.o
+*~
