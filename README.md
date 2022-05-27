@@ -6,7 +6,7 @@ means bac à sable in French).
 
 Mainly C++ code but also Julia, Forth, Prolog, Scilab, GTK+ and C code ... some related to C++.
 
-## Godot script
+## Godot script
 
 Learning by myself how to program in Godot.
 
