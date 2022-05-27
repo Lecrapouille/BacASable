@@ -100,6 +100,11 @@ public:
         return m_nodes;
     }
 
+    inline std::vector<Node<T>>& nodes()
+    {
+        return m_nodes;
+    }
+
     inline Node<T>& node(size_t i)
     {
         assert(i < m_nodes.size());
