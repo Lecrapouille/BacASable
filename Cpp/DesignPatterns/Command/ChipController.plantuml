@@ -1,0 +1,18 @@
+@startuml
+
+'[brief] Simulate chip controller.
+'[code] virtual bool bootload() = 0;
+'[code] virtual void running() = 0;
+'[code] virtual void degraded() = 0;
+
+'[test] MOCK_METHOD(void, bootload, ());
+'[test] MOCK_METHOD(void, running, ());
+'[test] MOCK_METHOD(void, degraded, ());
+
+[*] --> Bootloading
+Bootloading : entering / bootload()
+Bootloading --> Running : success / running()
+Bootloading --> Degraded : failure / degraded()
+Running --> Degraded : failure / degraded()
+
+@enduml
