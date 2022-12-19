@@ -7,7 +7,9 @@ Test two libraries:
 On a simple car kinematic using the tricycle kinematic equations.
 
 Equation:
+
 ![doc/TricycleKinematicEq.png](doc/TricycleKinematicEq.png)
 
 tricycle:
+
 ![doc/TricycleVehicle.png](doc/TricycleVehicle.png)

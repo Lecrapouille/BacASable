@@ -96,7 +96,7 @@ private:
 };
 
 //******************************************************************************
-// g++ --std=c++17 -Wall -Wextra -Iunits/include class.cpp -o prog
+// g++ --std=c++17 -Wall -Wextra -Iunits/include units.cpp -o prog-units
 //******************************************************************************
 int main()
 {
