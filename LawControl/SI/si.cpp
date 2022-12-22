@@ -123,7 +123,7 @@ int main()
         car1.update(dt, angle, speed);
         car2.update(dt.value(), angle.value(), speed.value());
         std::cout << i << ";"
-                  << (static_cast<long double>(i) * dt.value()) << ";" // FIXME
+                  << (static_cast<long double>(i) * dt).value() << ";" // FIXME
 
                   << car1.x() << ";"
                   << car1.y() << ";"

@@ -7,10 +7,10 @@
 #include "units.h"
 
 using namespace units::literals;
-using namespace units::length;
-using namespace units::time;
-using namespace units::velocity;
-using namespace units::angle;
+using Meter = units::length::meter_t;
+using Radian = units::angle::radian_t;
+using MeterPerSecond = units::velocity::meters_per_second_t;
+using Second = units::time::second_t;
 
 //******************************************************************************
 //! \brief Simple car kinematic using the tricycle kinematic equations using
@@ -22,7 +22,7 @@ class CarUnits
 {
 public:
 
-    CarUnits(meter_t const wheelbase)
+    CarUnits(Meter const wheelbase)
         : m_wheelbase(wheelbase)
     {}
 
@@ -30,7 +30,7 @@ public:
     //! \param[in] dt: time step
     //! \param[in] angle: wheel angle
     //! \param[in] speed: vehicle speed
-    void update(second_t const dt, radian_t const angle, meters_per_second_t const speed)
+    void update(Second const dt, Radian const angle, MeterPerSecond const speed)
     {
         auto u = 1.0_rad;
 
@@ -40,23 +40,23 @@ public:
         m_y += dt * speed * units::math::sin(m_heading);
     }
 
-    inline meter_t x() const { return m_x; }
-    inline meter_t y() const { return m_y; }
-    inline meters_per_second_t speed() const { return m_speed; }
-    inline radian_t heading() const { return m_heading; }
+    inline Meter x() const { return m_x; }
+    inline Meter y() const { return m_y; }
+    inline MeterPerSecond speed() const { return m_speed; }
+    inline Radian heading() const { return m_heading; }
 
 private:
 
     //! \brief longitudinal wheel to wheel distance
-    const meter_t m_wheelbase;
+    const Meter m_wheelbase;
     //! \brief X position of the middle of the rear axle.
-    meter_t m_x = 0.0_m;
+    Meter m_x = 0.0_m;
     //! \brief X position of the middle of the rear axle.
-    meter_t m_y = 0.0_m;
+    Meter m_y = 0.0_m;
     //! \brief Heading of the vehicle.
-    radian_t m_heading = 0.0_rad;
+    Radian m_heading = 0.0_rad;
     //! \brief Longitudinal speed of the vehicle.
-    meters_per_second_t m_speed;
+    MeterPerSecond m_speed;
 };
 
 #include <cmath>
@@ -100,13 +100,13 @@ private:
 //******************************************************************************
 int main()
 {
-    const meter_t wheelbase = 1.0_m;
+    const Meter wheelbase = 1.0_m;
     CarUnits car1(wheelbase);
     CarNoUnits car2(wheelbase.value());
 
-    radian_t angle = 10.0_deg;
-    meters_per_second_t speed = 10.0_km / 1.0_hr;
-    second_t dt = 0.1_s;
+    Radian angle = 10.0_deg;
+    MeterPerSecond speed = 10.0_km / 1.0_hr;
+    Second dt = 0.1_s;
 
     std::cout << "Step;Time;Car1 Position x;Car1 Position Y;Car1 Speed;Car1 Heading;"
               << "Car2 Position x;Car2 Position Y;Car2 Speed;Car2 Heading"
