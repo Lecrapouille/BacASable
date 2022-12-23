@@ -11,6 +11,10 @@ Mainly C++ code but also Julia, Forth, Prolog, Scilab, GTK+ and C code ... some 
 Quick bash scripts:
 - backing up my GitHub projects.
 
+## ChatGPT
+
+Test generating C++ code from ChatGPT.
+
 ## C code
 
 ### AutoLoadLib
