@@ -12,6 +12,9 @@ for compiling the file.
 My requests for chatGPT are described in the header comment (in French) of each
 files. I also described issues in the code generated and what I did to fix them.
 
+Edit: thanks to https://github.com/ryanschiang/chatgpt-export you can export
+your talks to markdown. I added my talks concerning [02_road.md](02_road.md).
+
 My conclusion:
 - The comprehension of natural language by ChatGPT is very impressive.
 - ChatGPT understands what I want. The first try (first chat) was always
