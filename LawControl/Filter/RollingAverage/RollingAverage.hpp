@@ -11,7 +11,7 @@
 //!                  i=0
 //! \tparam N the size of the rolling windows.
 //*****************************************************************************
-template<size_t N>
+template<typename T, size_t N>
 class RollingAverage
 {
 public:
@@ -24,7 +24,7 @@ public:
        size_t i = N;
        while (i--)
        {
-           m_samples[i] = 0.0f;
+           m_samples[i] = T{};
        }
     }
 
@@ -34,7 +34,7 @@ public:
     //! \param[in] x: the new sample
     //! \return y[n] / N
     //-------------------------------------------------------------------------
-    float operator()(const float x)
+    T operator()(const T x)
     {
         // Remove last inserted sample (m_samples[m_index]) add the new sample (x)
         m_sum += (x - m_samples[m_index]);
@@ -49,7 +49,7 @@ public:
         }
 
         // Mean
-        float y = m_sum / ((m_buffering) ? float(m_index) : float(N));
+        T y = m_sum / ((m_buffering) ? T(m_index) : T(N));
 
         // Circular index
         if (m_index == N)
@@ -62,9 +62,9 @@ public:
 
 private:
 
-    float  m_samples[N];
+    T      m_samples[N];
     size_t m_index = 0u;
-    float  m_sum = 0.0f;
+    T      m_sum = T{};
     bool   m_buffering = true;
 };
 
