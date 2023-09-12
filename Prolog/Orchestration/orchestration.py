@@ -30,7 +30,7 @@ class Node:
         x1 = self.x + radius
         y1 = self.y + radius
         canvas.create_oval(x0, y0, x1, y1, fill="blue")
-        canvas.create_text(self.x + 1, self.y - 12, anchor=W, font="Purisa", text=self.name)
+        canvas.create_text(self.x + 1, self.y - 12, anchor=W, font="Purisa", text=self.name.upper())
 
 ###############################################################################
 class Arc:
@@ -44,7 +44,7 @@ class Arc:
 
 ###############################################################################
 class Bot:
-    def __init__(self, name_, x_, y_):
+    def __init__(self, name_, x_, y_, orig_):
         self.name = name_
         self.radius = 30
         self.x = x_
@@ -52,7 +52,11 @@ class Bot:
         self.speed_x = 0
         self.speed_y = 0
         self.collided = False
-        self.destination = ''
+        self.path = []
+        self.origin = orig_
+        self.final_destination = ''
+        self.local_destination = ''
+        self.status = StringVar()
 
     def set_speed(self, x_, y_):
         self.speed_x = x_
@@ -85,70 +89,72 @@ class Deck:
     def __init__(self):
         self.nodes = {
             # 1ere ligne de noeuds
-            "A": Node("A", 40, 53),
-            "B": Node("B", 117, 53),
-            "C": Node("C", 222, 53),
-            "D": Node("D", 889, 53),
-            "E": Node("E", 966, 53),
+            "a": Node("a", 40, 53),
+            "b": Node("b", 117, 53),
+            "c": Node("c", 222, 53),
+            "d": Node("d", 889, 53),
+            "e": Node("e", 966, 53),
 
             # 2ieme ligne de noeuds
-            "F": Node("F", 40, 130),
-            "G": Node("G", 117, 130),
-            "H": Node("H", 222, 130),
-            "I": Node("I", 889, 130),
-            "J": Node("J", 966, 130),
+            "f": Node("f", 40, 130),
+            "g": Node("g", 117, 130),
+            "h": Node("h", 222, 130),
+            "i": Node("i", 889, 130),
+            "j": Node("j", 966, 130),
 
             # 3ieme ligne de noeuds
-            "K": Node("K", 40, 235),
-            "L": Node("L", 117, 235),
-            "M": Node("M", 661, 235),
-            "N": Node("N", 889, 235),
-            "O": Node("O", 966, 235),
+            "k": Node("k", 40, 235),
+            "l": Node("l", 117, 235),
+            "m": Node("m", 661, 235),
+            "n": Node("n", 889, 235),
+            "o": Node("o", 966, 235),
         }
 
         self.arcs = {
             # 1ere ligne horizontale
-            "AB": Arc(self.nodes, "AB"),
-            "BC": Arc(self.nodes, "BC"),
-            "CD": Arc(self.nodes, "CD"),
-            "DE": Arc(self.nodes, "DE"),
+            "ab": Arc(self.nodes, "ab"),
+            "bc": Arc(self.nodes, "bc"),
+            "cd": Arc(self.nodes, "cd"),
+            "de": Arc(self.nodes, "de"),
 
             # 2ieme ligne horizontale
-            "FG": Arc(self.nodes, "FG"),
-            "GH": Arc(self.nodes, "GH"),
-            "HI": Arc(self.nodes, "HI"),
-            "IJ": Arc(self.nodes, "IJ"),
+            "fg": Arc(self.nodes, "fg"),
+            "gh": Arc(self.nodes, "gh"),
+            "hi": Arc(self.nodes, "hi"),
+            "ij": Arc(self.nodes, "ij"),
 
             # 3ieme ligne horizontale
-            "KL": Arc(self.nodes, "KL"),
-            "MN": Arc(self.nodes, "MN"),
-            "NO": Arc(self.nodes, "NO"),
+            "kl": Arc(self.nodes, "kl"),
+            "mn": Arc(self.nodes, "mn"),
+            "no": Arc(self.nodes, "no"),
 
             # 1ere ligne verticale
-            "AF": Arc(self.nodes, "AF"),
-            "FK": Arc(self.nodes, "FK"),
+            "af": Arc(self.nodes, "af"),
+            "fk": Arc(self.nodes, "fk"),
 
             # 2ieme ligne verticale
-            "BG": Arc(self.nodes, "BG"),
-            "GL": Arc(self.nodes, "GL"),
+            "bg": Arc(self.nodes, "bg"),
+            "gl": Arc(self.nodes, "gl"),
 
             # 3ieme ligne verticale
-            "CH": Arc(self.nodes, "CH"),
+            "ch": Arc(self.nodes, "ch"),
 
             # 4ieme ligne verticale
-            "DI": Arc(self.nodes, "DI"),
-            "IN": Arc(self.nodes, "IN"),
+            "di": Arc(self.nodes, "di"),
+            "in": Arc(self.nodes, "in"),
 
             # 5ieme ligne verticale
-            "EJ": Arc(self.nodes, "EJ"),
-            "JO": Arc(self.nodes, "JO"),
+            "ej": Arc(self.nodes, "ej"),
+            "jo": Arc(self.nodes, "jo"),
         }
 
     def to_prolog(self):
         f = open("deck.pl", "w")
+        for a in self.nodes.values():
+            f.write("arc(" + a.name + ", " + a.name + ").\n")
         for a in self.arcs.values():
-            f.write("arc(" + a.orig.name.lower() + ", " + a.dest.name.lower() + ").\n")
-            f.write("arc(" + a.dest.name.lower() + ", " + a.orig.name.lower() + ").\n")
+            f.write("arc(" + a.orig.name + ", " + a.dest.name + ").\n")
+            f.write("arc(" + a.dest.name + ", " + a.orig.name + ").\n")
         f.close()
 
     def draw(self):
@@ -165,7 +171,8 @@ class Maestro:
         self.collision = False
         self.bots = []
         for i in range(len(nodes)):
-            self.bots.append(Bot("Bot" + str(i), self.deck.nodes[nodes[i]].x, self.deck.nodes[nodes[i]].y))
+            n = nodes[i].lower()
+            self.bots.append(Bot("Bot" + str(i), self.deck.nodes[n].x, self.deck.nodes[n].y, n))
         self.to_prolog(nodes)
 
     def draw(self):
@@ -177,8 +184,19 @@ class Maestro:
         self.deck.to_prolog()
         f = open("bots.pl", "w")
         for bot in range(len(self.bots)):
-            f.write("sur(" + self.bots[bot].name.lower() + ", " + nodes[bot].lower() + ").\n")
+            n = nodes[bot].lower()
+            f.write("bot(" + self.bots[bot].name.lower() + ", " + n + ", " + n + ").\n")
         f.close()
+
+    def query_prolog(self, orig, dest):
+        self.prolog.consult("orchestration.pl")
+        query = "findapath({},{},Path,[]).".format(orig, dest)
+        print("prolog query:", query) 
+        for result in self.prolog.query(query):
+            r = list(result["Path"])[1:]
+            print("prolog solution:", r)
+            return r
+        return None
 
     def plannification(self, dt):
         for b in range(len(self.bots)):
@@ -186,19 +204,35 @@ class Maestro:
             nodes = self.deck.nodes
 
             # No destination => no speed
-            if bot.destination == '':
+            if (bot.final_destination == ''):
+                bot.status.set("no destination given")
                 bot.set_speed(0, 0)
                 continue
 
-            # Reached destination ? => no speed
-            n = nodes[bot.destination]
+            # Give a path
+            if len(bot.path) == 0:
+                bot.path = self.query_prolog(bot.origin, bot.final_destination)
+                bot.local_destination = bot.path[0]
+                bot.status.set("going to " + bot.local_destination)
+
+            # Reached a destination ?
+            n = nodes[bot.local_destination]
             dx = n.x - bot.x
             dy = n.y - bot.y
             distance = np.sqrt(dx**2 + dy**2)
             if distance == 0:
-                bot.destination = ''
-                bot.set_speed(0, 0)
-                continue
+                # Reached the final destination ? no speed
+                if bot.local_destination == bot.final_destination:
+                    bot.status.set("reached destination") # FIXME never displayed
+                    bot.origin = bot.final_destination
+                    bot.final_destination = ''
+                    bot.path = []
+                    bot.set_speed(0, 0)
+                    continue
+                else:
+                    bot.path.pop(0)
+                    bot.local_destination = bot.path[0]
+                    bot.status.set("going to " + bot.local_destination)
 
             velocity = 1/dt
             speed_x = velocity * np.sign(dx)
@@ -217,20 +251,13 @@ class Maestro:
                     other.collided = True
                     continue
 
-    def foobar(self):
-        self.prolog.consult("orchestration.pl")
-        for res in self.prolog.query("noeud(X)."):
-            print(res)
-            print('===')
-        for res in self.prolog.query("noeuds(X)."):
-            print(res)
-
 ###############################################################################
 class Application:
     def __init__(self, bots):
         self.timing = 10 # reschedule event in 10 ms
         self.backup = bots
         self.count_bots = len(bots)
+        self.maestro = Maestro(bots)
 
         win.title("Bots orchestration")
         win.geometry("1024x320")
@@ -240,16 +267,19 @@ class Application:
         button_reset.pack(side="left")
 
         self.entries = []
+        self.labels = []
         for i in range(self.count_bots):
             Label(win, text="Bot" + str(i)).pack(side="left")
             entry = Entry(win)
             entry.pack(side="left")
             self.entries.append(entry)
+            label = Label(win, textvariable = self.maestro.bots[i].status)
+            label.pack(side="left")
+            self.labels.append(label)
 
         button_go = Button(win, text="Go", command=self.go)
         button_go.pack(side="left")
 
-        self.maestro = Maestro(bots)
         win.after(self.timing, self.task)
 
     def run(self):
@@ -266,9 +296,9 @@ class Application:
 
     def go(self):
         for i in range(self.count_bots):
-            self.maestro.bots[i].destination = self.entries[i].get()
+            self.maestro.bots[i].final_destination = self.entries[i].get().lower()
 
 ###############################################################################
 if __name__ == '__main__':
-    app = Application(["J", "I"])
+    app = Application(["I"])
     app.run()
