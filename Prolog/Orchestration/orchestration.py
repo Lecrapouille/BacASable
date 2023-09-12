@@ -6,6 +6,12 @@ win = Tk()
 canvas = Canvas(win, width=1024, height=270)
 
 ###############################################################################
+def distance(a, b):
+    dx = a.x - b.x
+    dy = a.y - b.y
+    return np.sqrt(dx**2 + dy**2)
+
+###############################################################################
 class Rect:
     def __init__(self, x1_, y1_, x2_, y2_):
         self.x1 = x1_
@@ -151,10 +157,11 @@ class Deck:
     def to_prolog(self):
         f = open("deck.pl", "w")
         for a in self.nodes.values():
-            f.write("arc(" + a.name + ", " + a.name + ").\n")
+            f.write("arc(" + a.name + ", " + a.name + ", 0).\n")
         for a in self.arcs.values():
-            f.write("arc(" + a.orig.name + ", " + a.dest.name + ").\n")
-            f.write("arc(" + a.dest.name + ", " + a.orig.name + ").\n")
+            d = distance(a.orig, a.dest)
+            f.write("arc(" + a.orig.name + ", " + a.dest.name + ", " + str(d) + ").\n")
+            f.write("arc(" + a.dest.name + ", " + a.orig.name + ", " + str(d) + ").\n")
         f.close()
 
     def draw(self):
@@ -190,7 +197,8 @@ class Maestro:
 
     def query_prolog(self, orig, dest):
         self.prolog.consult("orchestration.pl")
-        query = "findapath({},{},Path,[]).".format(orig, dest)
+        #query = "findapath({},{},Path,[]).".format(orig, dest)
+        query = "findminpath({},{},Distance,Path).".format(orig, dest)
         print("prolog query:", query) 
         for result in self.prolog.query(query):
             r = list(result["Path"])[1:]

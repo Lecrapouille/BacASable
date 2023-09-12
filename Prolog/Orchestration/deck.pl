@@ -1,55 +1,55 @@
-arc(a, a).
-arc(b, b).
-arc(c, c).
-arc(d, d).
-arc(e, e).
-arc(f, f).
-arc(g, g).
-arc(h, h).
-arc(i, i).
-arc(j, j).
-arc(k, k).
-arc(l, l).
-arc(m, m).
-arc(n, n).
-arc(o, o).
-arc(a, b).
-arc(b, a).
-arc(b, c).
-arc(c, b).
-arc(c, d).
-arc(d, c).
-arc(d, e).
-arc(e, d).
-arc(f, g).
-arc(g, f).
-arc(g, h).
-arc(h, g).
-arc(h, i).
-arc(i, h).
-arc(i, j).
-arc(j, i).
-arc(k, l).
-arc(l, k).
-arc(m, n).
-arc(n, m).
-arc(n, o).
-arc(o, n).
-arc(a, f).
-arc(f, a).
-arc(f, k).
-arc(k, f).
-arc(b, g).
-arc(g, b).
-arc(g, l).
-arc(l, g).
-arc(c, h).
-arc(h, c).
-arc(d, i).
-arc(i, d).
-arc(i, n).
-arc(n, i).
-arc(e, j).
-arc(j, e).
-arc(j, o).
-arc(o, j).
+arc(a, a, 0).
+arc(b, b, 0).
+arc(c, c, 0).
+arc(d, d, 0).
+arc(e, e, 0).
+arc(f, f, 0).
+arc(g, g, 0).
+arc(h, h, 0).
+arc(i, i, 0).
+arc(j, j, 0).
+arc(k, k, 0).
+arc(l, l, 0).
+arc(m, m, 0).
+arc(n, n, 0).
+arc(o, o, 0).
+arc(a, b, 77.0).
+arc(b, a, 77.0).
+arc(b, c, 105.0).
+arc(c, b, 105.0).
+arc(c, d, 667.0).
+arc(d, c, 667.0).
+arc(d, e, 77.0).
+arc(e, d, 77.0).
+arc(f, g, 77.0).
+arc(g, f, 77.0).
+arc(g, h, 105.0).
+arc(h, g, 105.0).
+arc(h, i, 667.0).
+arc(i, h, 667.0).
+arc(i, j, 77.0).
+arc(j, i, 77.0).
+arc(k, l, 77.0).
+arc(l, k, 77.0).
+arc(m, n, 228.0).
+arc(n, m, 228.0).
+arc(n, o, 77.0).
+arc(o, n, 77.0).
+arc(a, f, 77.0).
+arc(f, a, 77.0).
+arc(f, k, 105.0).
+arc(k, f, 105.0).
+arc(b, g, 77.0).
+arc(g, b, 77.0).
+arc(g, l, 105.0).
+arc(l, g, 105.0).
+arc(c, h, 77.0).
+arc(h, c, 77.0).
+arc(d, i, 77.0).
+arc(i, d, 77.0).
+arc(i, n, 105.0).
+arc(n, i, 105.0).
+arc(e, j, 77.0).
+arc(j, e, 77.0).
+arc(j, o, 105.0).
+arc(o, j, 105.0).
