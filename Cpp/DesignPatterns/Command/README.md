@@ -5,6 +5,7 @@ For more information about the Command pattern, read the book "SFML Game Develop
 ## Context
 
 In this example, let's suppose we have to implement a single application holding more than one `ChipController` class communicating with their associated microcontroller `Chip` through a single medium of communication (SPI or I2C ...).
+Each `ChipController` sends a message to its `Chip`, wait for an answer and parse it once received.
 
 The following figure depicts the architecture:
 
@@ -39,7 +40,7 @@ The following figure depicts the code implemented in C++17. For clarity, on this
 ![Solution](Solution.png)
 
 - `Medium` of communication can be SPI, or I2C. In this example, we stub it because we do not have hardware.
-- `Commands` are based on `std::function`.
+- `Commands` are based on `std::function`. They known the communication medium, contain the message to send and how to parse the answer once received.
 - The `CommandQueue` is a thread-safe queue based on `std::queue`. The queue allows for serialization to send
   commands.
 - `std::future` and `std::promise` allows getting Chip answers and using them afterward. In our case, we use them
