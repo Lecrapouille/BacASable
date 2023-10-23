@@ -34,8 +34,9 @@
 // *****************************************************************************
 
 #  include <SFML/Graphics.hpp>
-#  include <iostream>
 #  include "Dimensions.hpp"
+#  include <iostream>
+#  include <memory>
 
     static inline float norm(const float xa, const float ya, const float xb, const float yb)
     {
