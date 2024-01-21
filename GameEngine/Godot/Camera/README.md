@@ -5,6 +5,7 @@ Youtube channel Game Dev Guide "Building a Camera Controller for a Strategy Game
 https://youtu.be/rnqF6S7PfFA
 
 ## Bindings
+
 - `W` or `UP`: forward translation the camera.
 - `S` or `DOWN`: backward translation the camera.
 - `D` or `RIGHT`: right translation the camera.
@@ -20,10 +21,13 @@ https://youtu.be/rnqF6S7PfFA
 - `ESCAPE`: stop tracking the cube.
 
 ## Issues
+
+- Still buggy compared to original code.
 - Quaternion lerp is not smooth.
 - lerp using time is a poor idea since lerp expect a ratio between 0 .. 1.
 
 ## Scene Graph
+
 - CameraRig: dummy node tracking a Camera. Used for offseting the camera position. It holds the script for controlling the camera.
 - MovingClickableCube: Use sub-nodes Area + CollisionShape to allow mouse click (like Unity's onMouseDown()). Hold a script to make move. Use a timer to change to movement. Since the important
 part is the camera control, this script is verybasic.
