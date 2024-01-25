@@ -126,8 +126,9 @@ sf::Vector2f min(const sf::Vector2f& a, const sf::Vector2f& b)
 //-----------------------------------------------------------------------------
 inline bool between(float const p, float const left, float const right)
 {
-    return (std::min(left, right) <= (p + EPS)) &&
-            (p <= (std::max(left, right) + EPS));
+    const float EPS2 = 0.0001f;
+    return (std::min(left, right) <= (p + EPS2)) &&
+            (p <= (std::max(left, right) + EPS2));
 }
 
 // ============================================================================
@@ -210,7 +211,7 @@ static size_t intersection(sf::Vector2f A, sf::Vector2f B, sf::Vector2f C,
     // then lines overlap.
     LineEquation eqAB(A, B);
     LineEquation eqCD(C, D);
-    double d = determinant(eqAB.a, eqAB.b, eqCD.a, eqCD.b);
+    float d = determinant(eqAB.a, eqAB.b, eqCD.a, eqCD.b);
     if (std::abs(d) < EPS)
     {
         // Parallel: no solution
@@ -232,7 +233,8 @@ static size_t intersection(sf::Vector2f A, sf::Vector2f B, sf::Vector2f C,
         left.x = right.x = -determinant(eqAB.c, eqAB.b, eqCD.c, eqCD.b) / d;
         left.y = right.y = -determinant(eqAB.a, eqAB.c, eqCD.a, eqCD.c) / d;
         return between(left.x, A.x, B.x) && between(left.y, A.y, B.y) &&
-                between(left.x, C.x, D.x) && between(left.y, C.y, D.y) ? 1u : 0u;
+                between(left.x, C.x, D.x) && between(left.y, C.y, D.y)
+            ? 1u : 0u;
     }
 }
 
@@ -292,7 +294,7 @@ public:
         : Segment(p1, p2), width(width_)
     {
         // For debugging
-        color = sf::Color(rand() % 255, rand() % 255, rand() % 255);
+        //color = sf::Color(rand() % 255, rand() % 255, rand() % 255);
     }
 
     virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override
@@ -340,9 +342,9 @@ public:
         {
             m_shape.setPoint(i++, it);
         }
-        m_shape.setFillColor(sf::Color(140, 140, 140, 50));
-        m_shape.setOutlineColor(sf::Color::Black);//(140, 140, 140, 255));
-        m_shape.setOutlineThickness(1); //10
+        m_shape.setFillColor(sf::Color(140, 140, 140));
+        m_shape.setOutlineColor(sf::Color(140, 140, 140));
+        m_shape.setOutlineThickness(1);
     }
 
     //-------------------------------------------------------------------------
@@ -419,11 +421,11 @@ public:
 
     Road() = default;
     Road(sf::Vector2f const& p1, sf::Vector2f const& p2)
-      : m_shape(RoadShape::generateRoadEnvelopVertices(p1, p2, 100.0f, 4u))
+      : m_shape(RoadShape::generateRoadEnvelopVertices(p1, p2, 100.0f, 10u))
     {
         // FIXME en float const
         std::vector<sf::Vector2f> vertices =
-            RoadShape::generateRoadEnvelopVertices(p1, p2, 100.0f, 4u);
+            RoadShape::generateRoadEnvelopVertices(p1, p2, 100.0f, 10u);
 
         const size_t size = vertices.size();
         m_borders.reserve(size);
@@ -438,11 +440,16 @@ public:
         m_shape.draw(target, states);
         for (auto const& it: m_borders)
         {
-            //target.draw(it, states);
+            target.draw(it, states);
         }
     }
 
     inline std::vector<RoadBorder> const& borders() const
+    {
+        return m_borders;
+    }
+
+    inline std::vector<RoadBorder>& borders()
     {
         return m_borders;
     }
@@ -471,7 +478,7 @@ public:
                     // by a common vertex (i.e. previously split segments, for
                     // example ((0,0), (10,0)) and ((10,0), (20,0)).
                     // BUT: this may discard non-splitted segments.
-                    if ((intersec.offset != 0.0f) && (intersec.offset != 1.0f))
+                    if ((intersec.offset > EPS) && (intersec.offset + EPS < 1.0f))
                     {
                         intersections.push_back(intersec.position);
 
@@ -500,7 +507,7 @@ class Editor: public Application::GUI
 public:
 
     Editor(Application& application)
-        : Application::GUI(application, "Editor", sf::Color::White)//Color(50, 160, 40))
+        : Application::GUI(application, "Editor", sf::Color(50, 160, 40))
     {
         m_roads = {
             // FIXME: buggy on semicircles intersection
@@ -516,7 +523,7 @@ public:
         };
 
         breakAllRoads(m_roads);
-        //m_borders = keptSegments(m_roads);
+        keptSegments(m_roads);
     }
 
 private:
@@ -533,32 +540,29 @@ private:
         }
     }
 
-    // FIXME: au lieu de retourner les segments, supprimer ceux stockés dans road
-    std::vector<RoadBorder> keptSegments(std::vector<Road>& roads)
+    void keptSegments(std::vector<Road>& roads)
     {
-        std::vector<RoadBorder> segments;
         for (size_t i = 0u; i < roads.size(); i++)
         {
-            for (auto const& border: roads[i].borders())
+            for (size_t j = 0u; j < roads.size(); j++)
             {
-                bool keep = true;
-                for (size_t j = 0u; j < roads.size(); j++)
+                if (i != j)
                 {
-                    if (i != j)
+                    std::vector<RoadBorder>& borders = roads[i].borders();
+                    size_t b = borders.size();
+                    size_t removed = 0u;
+                    while (b--)
                     {
-                        if (roads[j].containsSegment(border))
+                        if (roads[j].containsSegment(borders[b]))
                         {
-                            keep = false;
-                            break;
+                            std::swap(borders[b], borders[borders.size() - 1u]);
+                            borders.pop_back();
                         }
                     }
-                }
-                if (keep) {
-                    segments.push_back(border);
+                    borders.resize(borders.size() - removed);
                 }
             }
         }
-        return segments;
     }
 
 private:
@@ -587,15 +591,9 @@ private:
             m_renderer.draw(it);
         }
 
-// FIXME temporaire
-        for (auto const& it: m_borders)
-        {
-            m_renderer.draw(it);
-        }
-
         for (auto const& it: m_intersections)
         {
-            drawCircle(m_renderer, it);
+            //drawCircle(m_renderer, it);
         }
     }
 
@@ -621,7 +619,6 @@ private:
     sf::View m_view;
     std::vector<Road> m_roads;
     std::vector<sf::Vector2f> m_intersections; // debug only
-    std::vector<RoadBorder> m_borders; // A supprimer: devraait mettre a jour borders de m_roads
 };
 
 // ============================================================================
@@ -629,18 +626,16 @@ private:
 int main()
 {
     srand(time(nullptr));
-
-    Segment s1(sf::Vector2f(64, 137), sf::Vector2f(564, 637));
-    Segment s2(sf::Vector2f(102, 450), sf::Vector2f(1001, 450));
+#if 0
+    Segment s1(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(20.0f, 0.0f));
+    Segment s2(sf::Vector2f(15.0f, 0.0f), sf::Vector2f(10.0f, 0.0f));
 
     Segment::Intersect intersec;
-    bool res = s1.intersection(s2, intersec);
+    bool res = Segment::intersection(s1, s2, intersec);
     std::cout << res << std::endl;
-    std::cout << intersec.offset << std::endl;
+    std::cout << intersec.offsets[0] << std::endl;
     std::cout << intersec.position.x << ", " << intersec.position.y << std::endl;
 
-return 0;
-#if 0
 sf::Vector2f l, r;
 res = Segment::intersect2(s1, s2, l, r);
     std::cout << res << std::endl;
