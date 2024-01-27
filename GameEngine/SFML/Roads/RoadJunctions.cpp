@@ -11,6 +11,8 @@
 #include <cmath>
 #include <algorithm>
 
+class Road;
+
 const float EPS = 1E-9;
 
 //-------------------------------------------------------------------------
@@ -415,8 +417,32 @@ private:
 };
 
 // ============================================================================
+//! \brief
+// ============================================================================
+struct RoadJunction: public sf::Drawable
+{
+    RoadJunction(RoadBorder const& b, Road& r)
+        : border(b), road(&r)
+    {}
+
+    virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override
+    {
+        target.draw(border, states);
+    }
+
+// FIXME: A repenser
+// sf::ConvexShape m_shape;
+// std::vector<Segment> m_parallel_borders
+// std::vector<Segment> m_intersecting_borders;
+    RoadBorder border;
+    Road* road; // Peut etre pas necessaire vu qu'on peut utiliser le grphe
+};
+
+// ============================================================================
 class Road: public sf::Drawable
 {
+    friend class Editor;
+
 public:
 
     Road() = default;
@@ -442,14 +468,21 @@ public:
         {
             target.draw(it, states);
         }
+#if 0 // For debug only. And draw a single road since m_shape is painted over them
+        for (auto& it: m_perpendicular_junctions)
+        {
+            it.border.color = sf::Color::Yellow;
+            target.draw(it, states);
+        }
+        for (auto& it: m_parallel_junctions)
+        {
+            it.border.color = sf::Color::Red;
+            target.draw(it, states);
+        }
+#endif
     }
 
     inline std::vector<RoadBorder> const& borders() const
-    {
-        return m_borders;
-    }
-
-    inline std::vector<RoadBorder>& borders()
     {
         return m_borders;
     }
@@ -498,7 +531,13 @@ public:
 private:
 
     RoadShape m_shape;
+    // TODO: liste of portion of roads
+    // std::vector<sf::ConvexShape> m_chunks?
     std::vector<RoadBorder> m_borders;
+    // TODO: to be merged inside RoadJunction
+    //  std::vector<RoadJunction>
+    std::vector<RoadJunction> m_perpendicular_junctions;
+    std::vector<RoadJunction> m_parallel_junctions;
 };
 
 // ============================================================================
@@ -548,18 +587,21 @@ private:
             {
                 if (i != j)
                 {
-                    std::vector<RoadBorder>& borders = roads[i].borders();
+                    std::vector<RoadBorder>& borders = roads[i].m_borders;
                     size_t b = borders.size();
-                    size_t removed = 0u;
                     while (b--)
                     {
                         if (roads[j].containsSegment(borders[b]))
                         {
+                            // Add it as road junction. FIXME: multiple roads junctions ?
+                            roads[j].m_perpendicular_junctions.emplace_back(borders[b], roads[i]);
+                            roads[i].m_parallel_junctions.emplace_back(borders[b], roads[j]);
+
+                            // Remove the element by swappint it with the last element
                             std::swap(borders[b], borders[borders.size() - 1u]);
                             borders.pop_back();
                         }
                     }
-                    borders.resize(borders.size() - removed);
                 }
             }
         }
@@ -591,10 +633,11 @@ private:
             m_renderer.draw(it);
         }
 
-        for (auto const& it: m_intersections)
-        {
-            //drawCircle(m_renderer, it);
-        }
+        // For debug only
+        //for (auto const& it: m_intersections)
+        //{
+        //    drawCircle(m_renderer, it);
+        //}
     }
 
     virtual void onHandleInput(sf::Event const& event) override
