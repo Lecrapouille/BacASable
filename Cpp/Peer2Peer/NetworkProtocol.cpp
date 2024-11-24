@@ -1,4 +1,7 @@
 #include "NetworkProtocol.hpp"
+#include "Serialization.hpp"
+
+#include <iostream>
 
 // ----------------------------------------------------------------------------
 sf::Packet NetworkProtocol::createDiscoveryPacket(unsigned short port)
@@ -10,16 +13,18 @@ sf::Packet NetworkProtocol::createDiscoveryPacket(unsigned short port)
 }
 
 // ----------------------------------------------------------------------------
-sf::Packet NetworkProtocol::createPingPacket()
+sf::Packet NetworkProtocol::createPingPacket(unsigned short port)
 {
     sf::Packet packet;
     packet << static_cast<sf::Uint8>(DiscoveryMessageType::PING);
+    packet << port;
     return packet;
 }
 
 // ----------------------------------------------------------------------------
 sf::Packet NetworkProtocol::createEconomyCalculationPacket(sf::Uint32 startIdx, sf::Uint32 count)
 {
+    std::cout << "Creating economy calculation packet startIdx: " << startIdx << " count: " << count << std::endl;
     sf::Packet packet;
     packet << static_cast<sf::Uint8>(GameMessageType::ECONOMY_UPDATE);
     packet << startIdx;
@@ -30,6 +35,7 @@ sf::Packet NetworkProtocol::createEconomyCalculationPacket(sf::Uint32 startIdx, 
 // ----------------------------------------------------------------------------
 sf::Packet NetworkProtocol::createTrafficCalculationPacket(sf::Uint32 zoneStartIdx, sf::Uint32 zoneCount)
 {
+    std::cout << "Creating traffic calculation packet startIdx: " << zoneStartIdx << " count: " << zoneCount << std::endl;
     sf::Packet packet;
     packet << static_cast<sf::Uint8>(GameMessageType::TRAFFIC_UPDATE);
     packet << zoneStartIdx;
@@ -42,17 +48,73 @@ sf::Packet NetworkProtocol::createStateSyncPacket(const GameState& state)
 {
     sf::Packet packet;
     packet << static_cast<sf::Uint8>(GameMessageType::STATE_SYNC);
+    packet << state.traffic << state.economy;
+    return packet;
+}
 
-    // Serialize car positions
-    const size_t car_count = state.traffic.car_positions.size();
-    packet << sf::Uint32(car_count);
+// ----------------------------------------------------------------------------
+void NetworkProtocol::processStateSync(sf::Packet& packet, GameState& state)
+{
+    packet >> state.traffic >> state.economy;
+}
 
-    for (size_t i = 0; i < car_count; ++i)
+// ----------------------------------------------------------------------------
+void NetworkProtocol::processTrafficUpdate(sf::Packet& packet, GameState& state)
+{
+    sf::Uint32 startIdx, count;
+    packet >> startIdx >> count;
+
+    std::cout << "Processing traffic update packet startIdx: " << startIdx << " count: " << count << std::endl;
+
+    // Verify bounds
+    if (startIdx + count > state.traffic.cars.size())
     {
-        const auto& pos = state.traffic.car_positions[i];
-        packet << pos.x << pos.y;
+        std::cerr << "Warning: Traffic update packet contains invalid range" << std::endl;
+        return;
     }
 
-    packet << state.economy.money;
-    return packet;
+    // Update car positions
+    for (sf::Uint32 i = 0; i < count; ++i)
+    {
+        packet >> state.traffic.cars[startIdx + i];
+        packet >> state.traffic.roads[startIdx + i];
+    }
+}
+
+// ----------------------------------------------------------------------------
+void NetworkProtocol::processEconomyUpdate(sf::Packet& packet, GameState& state)
+{
+    sf::Uint32 startIdx, count;
+    packet >> startIdx >> count;
+
+    std::cout << "Processing economy update packet startIdx: " << startIdx << " count: " << count << std::endl;
+
+    // Verify bounds
+    if (startIdx + count > state.economy.buildings.size())
+    {
+        std::cerr << "Warning: Economy update packet contains invalid range" << std::endl;
+        return;
+    }
+
+    // Update building incomes
+    for (sf::Uint32 i = 0; i < count; ++i)
+    {
+        packet >> state.economy.buildings[startIdx + i];
+    }
+
+    // Update total money
+    packet >> state.economy.money >> state.economy.tax_rate;
+}
+
+// ----------------------------------------------------------------------------
+void NetworkProtocol::processClientStateUpdate(sf::Packet& packet, GameState& state)
+{
+    // Extraire l'état du client du paquet
+    GameState clientState;
+    packet >> clientState.traffic >> clientState.economy;
+
+    // Fusionner l'état du client avec l'état global
+    // Note: Ici nous pourrions ajouter une logique de validation ou de résolution de conflits
+    state.traffic = clientState.traffic;
+    state.economy = clientState.economy;
 }

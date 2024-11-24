@@ -1,8 +1,9 @@
 #include "Host.hpp"
 
-Host::Host(unsigned short port) 
+Host::Host(unsigned short port)
     : Client(port, true)
 {
+    GameManager::createInitialState(m_game_state);
     initialize_host_specifics();
 }
 
@@ -26,7 +27,7 @@ void Host::handleKeyPress(sf::Keyboard::Key key)
     switch (key)
     {
         case sf::Keyboard::F5:
-            // Démarrer nouvelle simulation
+            GameManager::createInitialState(m_game_state);
             break;
         case sf::Keyboard::F6:
             // Pause/Reprise
@@ -46,4 +47,4 @@ void Host::renderGameElements()
 {
     Client::renderGameElements();
     m_window.draw(m_control_text);
-} 
+}

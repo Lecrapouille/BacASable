@@ -1,0 +1,25 @@
+@startuml
+participant Client
+participant Host
+participant "NetworkNode\n(Client)" as NodeC
+participant "NetworkNode\n(Host)" as NodeH
+participant GameManager
+== Discovery ==
+Client -> NodeC: update()
+NodeC -> NodeH: PING
+NodeH -> Host: addPeer()
+Host -> NodeH: DISCOVERY
+NodeC <- NodeH: DISCOVERY
+== Work Distribution ==
+Host -> NodeH: update()
+NodeH -> NodeC: TRAFFIC_UPDATE(startIdx, count)
+NodeC -> Client: update()
+Client -> GameManager: update(startIdx, count)
+GameManager -> Client: updated state
+Client -> NodeC: send updated state
+NodeC -> NodeH: STATE_SYNC(startIdx, count)
+== Synchronization ==
+Host -> NodeH: synchronizeState()
+NodeH -> NodeC: STATE_SYNC
+NodeC -> Client: processStateSync()
+@enduml

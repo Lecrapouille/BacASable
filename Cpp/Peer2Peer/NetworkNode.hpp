@@ -68,6 +68,13 @@ private:
     void updatePeerDiscovery(float deltaTime);
 
     /**
+     * @brief Updates client state and sends it to the host
+     * @param deltaTime [in] Time elapsed since last update
+     * @param state [inout] Game state to update
+     */
+    void updateClientState(float deltaTime, GameState& state);
+
+    /**
      * @brief Adds a new peer to the network
      * @param id [in] Unique identifier for the peer
      * @param address [in] IP address of the peer
@@ -94,13 +101,12 @@ private:
     /**
      * @brief Receives and queues incoming network messages
      */
-    void receiveMessages();
+    void receiveGamePackets(GameState& state);
 
     /**
-     * @brief Processes queued network messages
-     * @param state [in] Current game state to process
+     * @brief Processes discovery packets
      */
-    void processMessages(GameState& state);
+    void receiveDiscoveryPackets();
 
     /**
      * @brief Distributes economy calculations among peers
@@ -121,27 +127,6 @@ private:
     void distributeTrafficLoad(const GameState& state);
 
     /**
-     * @brief Process a traffic update message
-     * @param[inout] state Game state to update
-     * @param[in] packet Network packet containing the update data
-     */
-    void processTrafficUpdate(GameState& state, sf::Packet& packet);
-
-    /**
-     * @brief Process an economy update message
-     * @param[inout] state Game state to update
-     * @param[in] packet Network packet containing the update data
-     */
-    void processEconomyUpdate(GameState& state, sf::Packet& packet);
-
-    /**
-     * @brief Process a full state synchronization message
-     * @param[inout] state Game state to update
-     * @param[in] packet Network packet containing the state data
-     */
-    void processStateSync(GameState& state, sf::Packet& packet);
-
-    /**
      * @brief Removes all inactive peers from the peer list
      */
     void removeInactivePeers();
@@ -158,15 +143,15 @@ private:
     };
 
     //! @brief Main communication socket
-    sf::UdpSocket m_socket;                 
+    sf::UdpSocket m_socket;
     //! @brief Discovery broadcast socket
-    sf::UdpSocket m_discovery_socket;        
+    sf::UdpSocket m_discovery_socket;
     //! @brief Connected peers
-    std::map<std::string, PeerInfo> m_peers; 
-    //! @brief Incoming message queue
-    std::queue<sf::Packet> m_message_queue;  
+    std::map<std::string, PeerInfo> m_peers;
+    //! @brief Whether the peer list has been updated
+    bool m_peers_updated = true;
     //! @brief Whether this is a host node
-    bool m_is_host;                           
+    bool m_is_host;
     //! @brief Time since last ping
-    float m_last_ping_sent = 0.0f;           
+    float m_last_ping_sent = 0.0f;
 };

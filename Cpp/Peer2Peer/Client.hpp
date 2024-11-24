@@ -6,18 +6,23 @@
 #include <memory>
 #include <string>
 
+/**
+ * @brief Client class. Manages the client side of the game.
+ */
 class Client
 {
 public:
-    /// \brief Constructor
-    /// \param[in] port Port number to use for network communication
-    /// \param[in] hosting Whether this client is a host
+    /**
+     * @brief Constructor
+     * @param[in] port Port number to use for network communication
+     * @param[in] hosting Whether this client is a host
+     */
     explicit Client(unsigned short port, bool hosting = false);
-    
     virtual ~Client() = default;
     virtual void run();
 
 protected:
+
     void initializeWindow();
     void handleEvents();
     virtual void handleKeyPress(sf::Keyboard::Key key);
