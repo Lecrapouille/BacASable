@@ -1,25 +1,52 @@
 @startuml
-participant Client
 participant Host
-participant "NetworkNode\n(Client)" as NodeC
 participant "NetworkNode\n(Host)" as NodeH
+participant "NetworkNode\n(Client)" as NodeC
+participant Client
 participant GameManager
+
 == Discovery ==
-Client -> NodeC: update()
-NodeC -> NodeH: PING
-NodeH -> Host: addPeer()
-Host -> NodeH: DISCOVERY
-NodeC <- NodeH: DISCOVERY
-== Work Distribution ==
-Host -> NodeH: update()
+Host -> NodeH: update(deltaTime, state)
+activate NodeH
+NodeH -> NodeH: updatePeerDiscovery()
+note right: Broadcast DISCOVERY\nvia m_discovery_socket
+NodeH --> NodeC: DISCOVERY(port)
+deactivate NodeH
+
+Client -> NodeC: update(deltaTime, state)
+activate NodeC
+NodeC -> NodeC: updatePeerDiscovery()
+NodeC -> NodeH: PING(port)
+deactivate NodeC
+
+== Game Loop ==
+Host -> NodeH: update(deltaTime, state)
+activate NodeH
+NodeH -> NodeH: distributeTrafficLoad(state)
 NodeH -> NodeC: TRAFFIC_UPDATE(startIdx, count)
-NodeC -> Client: update()
-Client -> GameManager: update(startIdx, count)
-GameManager -> Client: updated state
-Client -> NodeC: send updated state
-NodeC -> NodeH: STATE_SYNC(startIdx, count)
-== Synchronization ==
-Host -> NodeH: synchronizeState()
+deactivate NodeH
+
+Client -> NodeC: update(deltaTime, state)
+activate NodeC
+NodeC -> NodeC: updateClientState()
+NodeC -> GameManager: update(state, deltaTime)
+activate GameManager
+GameManager --> NodeC: updated state
+deactivate GameManager
+NodeC -> NodeH: STATE_SYNC
+deactivate NodeC
+
+Host -> NodeH: update(deltaTime, state)
+activate NodeH
+NodeH -> NodeH: synchronizeState(state)
 NodeH -> NodeC: STATE_SYNC
-NodeC -> Client: processStateSync()
+deactivate NodeH
+
+Client -> NodeC: update(deltaTime, state)
+activate NodeC
+NodeC -> GameManager: processStateSync()
+activate GameManager
+GameManager --> NodeC: updated state
+deactivate GameManager
+deactivate NodeC
 @enduml
