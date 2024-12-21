@@ -1,107 +1,194 @@
 # SimCity P2P
 
-A distributed P2P city simulation where each client contributes to simulation computations.
+A distributed implementation of a mini SimCity using a peer-to-peer architecture for traffic and economy simulation. Each client contributes to the simulation computations, making it a truly distributed system.
 
-## Game Description
+## Overview
 
-SimCity P2P is a simplified city simulation where:
-- Buildings generate revenue
-- Cars move between buildings on a road network
-- Each client is identified by a unique color
-- The economy is managed through a taxation system
+The project demonstrates:
+- Peer-to-peer architecture with distributed computation
+- Real-time traffic simulation with dynamic routing
+- Economic simulation with revenue generation and taxation
+- SFML-based graphical interface with real-time visualization
+- UDP-based network protocol for efficient communication
 
-### Objectives
+## Architecture
 
-- Demonstrate P2P architecture with load distribution
-- Simulate a simple economy with revenue-generating buildings
-- Manage road traffic between buildings
+The project uses a hybrid client/server architecture with P2P computation distribution:
 
-## Game State
+### Core Classes
 
-The game state consists of three main components:
+- **Client**
+  - Base class handling GUI and network communication
+  - Manages local game state and rendering
+  - Processes distributed computation tasks
+  - Maintains network connection with host
 
-### Traffic
-- Cars moving on the road network
-- Each car has:
-  - Current position and destination
-  - Speed and direction
-  - Owner (client color)
-- Traffic calculations are distributed among clients
+- **Host** (inherits from Client)
+  - Coordinates peer discovery and management
+  - Distributes computation tasks among clients
+  - Maintains authoritative game state
+  - Handles state synchronization
+  - Additional controls for game management (F5-F8)
 
-### Economy
-- Buildings:
-  - Position and type
-  - Revenue generation rate
-  - Owner (client color)
-- Global economy:
-  - Tax rates
-  - Treasury balance
-  - Revenue distribution
+- **NetworkNode**
+  - Manages P2P communication and computation distribution
+  - Handles peer discovery and maintenance
+  - Uses UDP sockets for efficient communication
+  - Implements timeout detection for peer management
+  - Distributes traffic and economy calculations
 
-### Infrastructure
-- Road network:
-  - Road segments and intersections
-  - Traffic capacity and flow
-- Building plots:
-  - Available locations
-  - Construction zones
-  - Land value
+- **GameManager**
+  - Static class handling game logic and state updates
+  - Manages car movement and pathfinding
+  - Handles building income generation
+  - Validates game state consistency
 
-## Software Architecture
+- **NetworkProtocol**
+  - Defines communication protocol between nodes
+  - Handles packet serialization/deserialization
+  - Implements different message types for various game aspects
+  - Ensures proper state synchronization
 
-### Overview
+- **GameState**
+  - Contains complete game state data
+  - Manages traffic simulation state (cars, roads)
+  - Handles economic state (buildings, money)
+  - Color-coded client identification
 
-The system uses a hybrid P2P architecture with a central host that:
-- Coordinates peer discovery
-- Distributes computational load
-- Synchronizes the global game state
+![Classes](classes.png)
 
-### Main Components
+### Communication Protocol
 
-- **Client**: Handles graphics rendering and user interface
-  - Inherits from `NetworkNode` for network communication
-  - Maintains a local copy of `GameState`
-  - Performs assigned calculations
+The protocol uses two UDP sockets per node:
 
-- **Host**: Extends Client with additional functionality
-  - Distributes computational load among clients
-  - Maintains the reference game state
-  - Periodically synchronizes all clients
+1. **Discovery Socket (Port 45678)**
+   - `DISCOVERY`: Broadcast by host (every 1s)
+     - Contains host's game port
+     - Used for peer discovery
+   - `PING`: Sent by clients (every 1s)
+     - Contains client's game port
+     - Maintains connection alive
+     - 5s timeout for inactive peers
 
-- **NetworkNode**: Manages all network communication
-  - Peer discovery
-  - Message sending/receiving
-  - Timeout management
+2. **Game Socket (Custom Port)**
+   - `TRAFFIC_UPDATE`
+     - Host->Client: Assigns car subset for movement calculation
+     - Client->Host: Returns updated car positions
+   - `ECONOMY_UPDATE`
+     - Host->Client: Assigns building subset for income calculation
+     - Client->Host: Returns updated building states
+   - `STATE_SYNC`
+     - Host->All: Complete game state broadcast
+     - Ensures consistency across all clients
 
-- **GameManager**: Contains game business logic
-  - Updates car positions
-  - Economic calculations
-  - Game state validation
+### Data Flow
 
-## Network Protocol
+1. **Discovery Phase**
+   ```
+   Host                    Client
+    |                        |
+    |-- DISCOVERY broadcast->|
+    |                        |
+    |<-------- PING ---------|
+    |                        |
+    |-- Add client to peers->|
+   ```
 
-The system uses several message types:
-- **Discovery Messages**
-  - DISCOVERY: Broadcast by host to announce presence
-  - PING: Sent by clients to maintain connection
+2. **Game Loop**
+   ```
+   Host                    Client
+    |                        |
+    |-- TRAFFIC_UPDATE ----->|
+    |                        |-- Process cars
+    |<-- Updated positions --|
+    |                        |
+    |-- ECONOMY_UPDATE ----->|
+    |                        |-- Process buildings
+    |<-- Updated economy ----|
+    |                        |
+    |-- STATE_SYNC --------->|
+   ```
 
-- **Update Messages**
-  - TRAFFIC_UPDATE: Distribution/response of traffic calculations
-  - ECONOMY_UPDATE: Distribution/response of economic calculations
+3. **Computation Distribution**
+   - Traffic: Each client processes N/M cars (N=total cars, M=clients)
+   - Economy: Each client processes N/M buildings
+   - Load balancing adjusts to client count changes
 
-- **Synchronization Messages**
-  - STATE_SYNC: Complete game state synchronization
+![Sequence](sequence.png)
 
-## Sequence Diagram
+## Features
 
-![Sequence Diagram](sequence_diagram.png)
+### Traffic Simulation
 
-## Possible Extension Points
+- Dynamic car movement between buildings
+- Velocity and direction calculations
+- Collision-free pathfinding
+- Distributed computation across clients
+- Color-coded cars per client
 
-- Add cryptographic message validation
-- Implement state save/load
-- Support automatic reconnection
-- Network data compression
-- Add different building types
-- Car pathfinding system
-- User interface for road and building construction
+### Economic Simulation
+
+- Building revenue generation
+- Global taxation system
+- Distributed economic calculations
+- Real-time income updates
+- Financial indicators display
+
+### Graphical Interface
+
+- Real-time visualization of:
+  - Buildings and roads
+  - Moving vehicles
+  - Economic indicators
+  - Network status
+- Color-coded client identification
+- Host-specific control panel
+
+## Building and Running
+
+### Prerequisites
+
+- Modern C++ compiler (C++17 or later)
+- SFML 2.5+ (graphics and network modules)
+- Linux environment (tested on Debian-based systems)
+
+### Dependencies Installation
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install libsfml-dev
+```
+
+### Compilation
+
+```bash
+g++ --std=c++17 -Wall -Wextra -Wshadow *.cpp -o prog `pkg-config --cflags --libs sfml-graphics sfml-network`
+```
+
+### Execution
+
+1. Start the host:
+```bash
+./prog host [port]  # i.e. port: 45000
+```
+
+2. Start one or more clients:
+```bash
+./prog client [port]  # i.e port: 45001
+```
+
+## Controls
+
+### Host Controls
+
+- `F5`: Start new simulation
+  - Generates random buildings
+  - Creates road network
+  - Spawns initial cars
+- `F6`: Pause/Resume simulation
+- `F7`: Save current state
+- `F8`: Load saved state
+- `Escape`: Exit application
+
+### Client Controls
+- `Escape`: Exit application
