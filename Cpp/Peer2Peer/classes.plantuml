@@ -1,0 +1,119 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class GameState {
+    +color: sf::Color
+    +struct Car
+    +struct Building
+    +struct Road
+    +struct Traffic
+    +struct Economy
+}
+
+class Car {
+    +position: sf::Vector2f
+    +speed: float
+    +source_building_idx: int
+    +destination_building_idx: int
+    +is_returning: bool
+}
+
+class Building {
+    +position: sf::Vector2f
+    +income: float
+}
+
+class Road {
+    +building1_idx: int
+    +building2_idx: int
+}
+
+class Traffic {
+    +cars: vector<Car>
+    +roads: vector<Road>
+}
+
+class Economy {
+    +buildings: vector<Building>
+    +money: float
+    +tax_rate: float
+}
+
+class GameManager {
+    +{static} createInitialState(GameState&): void
+    +{static} validateState(const GameState&): bool
+    +{static} update(GameState&, float): void
+}
+
+class NetworkNode {
+    -m_socket: sf::UdpSocket
+    -m_discovery_socket: sf::UdpSocket
+    -m_peers: map<string, PeerInfo>
+    -m_peers_updated: bool
+    -m_is_host: bool
+    -m_last_ping_sent: float
+    +update(float, GameState&): void
+    +hasAvailableNodes(): bool
+    +getActivePeerCount(): size_t
+    +getPort(): unsigned short
+    +getNetworkStatusString(): string
+    -updatePeerDiscovery(float): void
+    -updateClientState(float, GameState&): void
+    -receiveGamePackets(GameState&): void
+    -distributeTrafficLoad(const GameState&): void
+    -synchronizeState(const GameState&): void
+}
+
+class Client {
+    #m_node: unique_ptr<NetworkNode>
+    #m_window: sf::RenderWindow
+    #m_is_host: bool
+    #m_font: sf::Font
+    #m_status_text: sf::Text
+    #m_game_state: GameState
+    +run(): void
+    #initializeWindow(): void
+    #handleEvents(): void
+    #handleKeyPress(sf::Keyboard::Key): void
+    #update(float): void
+    #updateStatusText(): void
+    #render(): void
+    #renderGameElements(): void
+}
+
+class Host {
+    -m_control_text: sf::Text
+    -initialize_host_specifics(): void
+    +handleKeyPress(sf::Keyboard::Key): void
+    #renderGameElements(): void
+}
+
+class NetworkProtocol {
+    +{static} createDiscoveryPacket(unsigned short): sf::Packet
+    +{static} createPingPacket(unsigned short): sf::Packet
+    +{static} createEconomyCalculationPacket(sf::Uint32, sf::Uint32): sf::Packet
+    +{static} createTrafficCalculationPacket(sf::Uint32, sf::Uint32): sf::Packet
+    +{static} createStateSyncPacket(const GameState&): sf::Packet
+    +{static} processStateSync(sf::Packet&, GameState&): void
+    +{static} processTrafficUpdate(sf::Packet&, GameState&): void
+    +{static} processEconomyUpdate(sf::Packet&, GameState&): void
+    +{static} processClientStateUpdate(sf::Packet&, GameState&): void
+}
+
+GameState *-- Car
+GameState *-- Building
+GameState *-- Road
+GameState *-- Traffic
+GameState *-- Economy
+Traffic o-- Car
+Traffic o-- Road
+Economy o-- Building
+
+Host --|> Client
+Client o-- NetworkNode
+Client o-- GameState
+NetworkNode ..> NetworkProtocol
+NetworkNode ..> GameManager
+GameManager ..> GameState
+
+@enduml 
