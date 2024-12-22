@@ -22,9 +22,6 @@ void GameManager::createInitialState(GameState& state)
     std::uniform_real_distribution<float> income_dist(100.0f, 500.0f);
     std::uniform_int_distribution<int> building_dist(0, NUM_BUILDINGS - 1);
 
-    // Color initialization
-    state.color = sf::Color(color_dist(gen), color_dist(gen), color_dist(gen), 255);
-
     // Clear existing data
     state.traffic.cars.clear();
     state.traffic.roads.clear();
@@ -36,6 +33,7 @@ void GameManager::createInitialState(GameState& state)
         GameState::Building building;
         building.position = {pos_dist_x(gen), pos_dist_y(gen)};
         building.income = income_dist(gen);
+        building.color = sf::Color(100, 100, 100, 255);
         state.economy.buildings.push_back(building);
     }
 
@@ -46,6 +44,7 @@ void GameManager::createInitialState(GameState& state)
         GameState::Road road;
         road.building1_idx = i;
         road.building2_idx = i + 1;
+        road.color = sf::Color(100, 100, 100, 255);
         state.traffic.roads.push_back(road);
     }
 
@@ -53,6 +52,7 @@ void GameManager::createInitialState(GameState& state)
     GameState::Road road;
     road.building1_idx = NUM_BUILDINGS - 1;
     road.building2_idx = 0;
+    road.color = sf::Color(100, 100, 100, 255);
     state.traffic.roads.push_back(road);
 
     // Traffic initialization
@@ -99,10 +99,12 @@ bool GameManager::validateState(const GameState& state)
 }
 
 // ----------------------------------------------------------------------------
-void GameManager::update(GameState& state, float dt)
+void GameManager::update(GameState& state, float dt, sf::Color color)
 {
     for (auto& car : state.traffic.cars)
     {
+        car.color = color;
+
         // Get current target position
         sf::Vector2f target_pos;
         if (!car.is_returning)
@@ -135,6 +137,7 @@ void GameManager::update(GameState& state, float dt)
     // Update building incomes
     for (auto& building : state.economy.buildings)
     {
+        building.color = color;
         building.income = 0.0f;
     }
 }

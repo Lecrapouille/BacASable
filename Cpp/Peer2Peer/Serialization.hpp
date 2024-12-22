@@ -36,6 +36,7 @@ inline sf::Packet& operator<<(sf::Packet& packet, const GameState::Car& car)
 {
     return packet << car.position.x << car.position.y 
            << car.speed
+           << car.color
            << car.source_building_idx 
            << car.destination_building_idx
            << car.is_returning;
@@ -46,6 +47,7 @@ inline sf::Packet& operator>>(sf::Packet& packet, GameState::Car& car)
 {
     return packet >> car.position.x >> car.position.y 
            >> car.speed
+           >> car.color
            >> car.source_building_idx 
            >> car.destination_building_idx
            >> car.is_returning;
@@ -55,6 +57,7 @@ inline sf::Packet& operator>>(sf::Packet& packet, GameState::Car& car)
 inline sf::Packet& operator<<(sf::Packet& packet, const GameState::Building& building)
 {
     return packet << building.position.x << building.position.y 
+           << building.color
            << building.income;
 }
 
@@ -62,19 +65,22 @@ inline sf::Packet& operator<<(sf::Packet& packet, const GameState::Building& bui
 inline sf::Packet& operator>>(sf::Packet& packet, GameState::Building& building)
 {
     return packet >> building.position.x >> building.position.y 
+           >> building.color
            >> building.income;
 }
 
 // ----------------------------------------------------------------------------
 inline sf::Packet& operator<<(sf::Packet& packet, const GameState::Road& road)
 {
-    return packet << road.building1_idx << road.building2_idx;
+    return packet << road.building1_idx << road.building2_idx
+           << road.color;
 }
 
 // ----------------------------------------------------------------------------
 inline sf::Packet& operator>>(sf::Packet& packet, GameState::Road& road)
 {
-    return packet >> road.building1_idx >> road.building2_idx;
+    return packet >> road.building1_idx >> road.building2_idx
+           >> road.color;
 }
 
 // ----------------------------------------------------------------------------
@@ -143,13 +149,13 @@ inline sf::Packet& operator>>(sf::Packet& packet, GameState::Economy& economy)
 // ----------------------------------------------------------------------------
 inline sf::Packet& operator<<(sf::Packet& packet, const GameState& state)
 {
-    packet << state.color << state.traffic << state.economy;
+    packet << state.traffic << state.economy;
     return packet;
 }
 
 // ----------------------------------------------------------------------------
 inline sf::Packet& operator>>(sf::Packet& packet, GameState& state)
 {
-    packet >> state.color >> state.traffic >> state.economy;
+    packet >> state.traffic >> state.economy;
     return packet;
 }

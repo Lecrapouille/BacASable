@@ -109,12 +109,12 @@ void NetworkProtocol::processEconomyUpdate(sf::Packet& packet, GameState& state)
 // ----------------------------------------------------------------------------
 void NetworkProtocol::processClientStateUpdate(sf::Packet& packet, GameState& state)
 {
-    // Extraire l'état du client du paquet
+    // Extract client state from packet
     GameState clientState;
     packet >> clientState.traffic >> clientState.economy;
 
-    // Fusionner l'état du client avec l'état global
-    // Note: Ici nous pourrions ajouter une logique de validation ou de résolution de conflits
+    // Merge client state with global state
+    // Note: Here we could add a validation or conflict resolution logic
     state.traffic = clientState.traffic;
     state.economy = clientState.economy;
 }

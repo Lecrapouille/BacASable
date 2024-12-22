@@ -3,7 +3,7 @@
 #include <iostream>
 #include <thread>
 
-// g++ --std=c++17 -Wall -Wextra -Wshadow *.cpp -o prog `pkg-config --cflags --libs sfml-graphics sfml-network`
+// g++ --std=c++17 -Wall -Wextra -Wshadow *.cpp -o SimCity `pkg-config --cflags --libs sfml-graphics sfml-network`
 int main(int argc, char* argv[])
 {
     try
@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
         }
         else if (mode == "client")
         {
-            Client client(port);
+            Client client(port, false);
             client.run();
         }
         else

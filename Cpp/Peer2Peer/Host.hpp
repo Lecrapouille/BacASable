@@ -11,7 +11,6 @@ public:
     explicit Host(unsigned short port);
 
 private:
-    void initialize_host_specifics();
     void handleKeyPress(sf::Keyboard::Key key) override;
     void renderGameElements() override;
 

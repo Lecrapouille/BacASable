@@ -23,6 +23,7 @@ public:
      * @brief Updates the game state
      * @param[inout] state The game state to update
      * @param[in] dt Time elapsed since last update in seconds
+     * @param[in] color The color specified for each peer.
      */
-    static void update(GameState& state, float dt);
+    static void update(GameState& state, float dt, sf::Color color);
 };

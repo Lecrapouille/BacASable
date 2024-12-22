@@ -30,7 +30,7 @@ NetworkNode::NetworkNode(unsigned short port, bool hosting) : m_is_host(hosting)
 }
 
 // ----------------------------------------------------------------------------
-void NetworkNode::update(float deltaTime, GameState& state)
+void NetworkNode::update(float deltaTime, GameState& state, sf::Color color)
 {
     // Discovery channel
     updatePeerDiscovery(deltaTime);
@@ -54,7 +54,7 @@ void NetworkNode::update(float deltaTime, GameState& state)
     // Client->Host: Clients send their game states to the host
     if (!m_is_host)
     {
-        updateClientState(deltaTime, state);
+        updateClientState(deltaTime, state, color);
     }
 
     // Host->Clients: synchronize client game states
@@ -65,13 +65,12 @@ void NetworkNode::update(float deltaTime, GameState& state)
 }
 
 // ----------------------------------------------------------------------------
-// FIXME les voitures ne bougent pas. Le host ne reçoit pas les états des clients.
-// Et de plus le startidx+count n'est pas envoyé (l'host pourrait le stocker dans PeerInfo)
-// Les clients doivent envoyer leurs couleurs.
-void NetworkNode::updateClientState(float deltaTime, GameState& state)
+void NetworkNode::updateClientState(float deltaTime, GameState& state, sf::Color color)
 {
+    std::cout << "Updating client state" << std::endl;
+
     // Update local state
-    GameManager::update(state, deltaTime);
+    GameManager::update(state, deltaTime, color);
 
     // Send updated state to the host
     for (const auto& [name, peer] : m_peers)
@@ -393,6 +392,8 @@ void NetworkNode::distributeEconomyCalculations(const GameState& state)
 // ----------------------------------------------------------------------------
 void NetworkNode::synchronizeState(const GameState& state)
 {
+    std::cout << "Synchronizing state" << std::endl;
+
     // Validate game state data
     if (!GameManager::validateState(state))
     {

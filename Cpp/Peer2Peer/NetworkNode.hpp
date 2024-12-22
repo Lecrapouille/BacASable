@@ -33,7 +33,7 @@ public:
      * @param deltaTime [in] Time elapsed since last update in seconds
      * @param state [inout] Game state to update
      */
-    void update(float deltaTime, GameState& state);
+    void update(float deltaTime, GameState& state, sf::Color color);
 
     /**
      * @brief Checks if there are available nodes for P2P communication
@@ -71,8 +71,9 @@ private:
      * @brief Updates client state and sends it to the host
      * @param deltaTime [in] Time elapsed since last update
      * @param state [inout] Game state to update
+     * @param color [in] Color specified for each peer
      */
-    void updateClientState(float deltaTime, GameState& state);
+    void updateClientState(float deltaTime, GameState& state, sf::Color color);
 
     /**
      * @brief Adds a new peer to the network
