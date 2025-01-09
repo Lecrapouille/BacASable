@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>PetriNetView.qml</file>
+        <file>NodeInfoPanel.qml</file>
+    </qresource>
+</RCC>
