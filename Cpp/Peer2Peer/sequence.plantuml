@@ -23,7 +23,7 @@ deactivate NodeC
 Host -> NodeH: update(deltaTime, state)
 activate NodeH
 NodeH -> NodeH: distributeTrafficLoad(state)
-NodeH -> NodeC: TRAFFIC_UPDATE(startIdx, count)
+NodeH -> NodeC: TRAFFIC_DISTRIBUTION(startIdx, count)
 deactivate NodeH
 
 Client -> NodeC: update(deltaTime, state)

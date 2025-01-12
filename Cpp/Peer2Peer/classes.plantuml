@@ -46,7 +46,7 @@ class GameManager {
 }
 
 class NetworkNode {
-    -m_socket: sf::UdpSocket
+    -m_game_socket: sf::UdpSocket
     -m_discovery_socket: sf::UdpSocket
     -m_peers: map<string, PeerInfo>
     -m_peers_updated: bool

@@ -73,7 +73,13 @@ private:
      * @param state [inout] Game state to update
      * @param color [in] Color specified for each peer
      */
-    void updateClientState(float deltaTime, GameState& state, sf::Color color);
+    void updateGameStateFromClient(float deltaTime, GameState& state, sf::Color color);
+
+    /**
+     * @brief Synchronizes game state with all peers
+     * @param state [in] Current game state to synchronize
+     */
+    void synchronizeClientGameStates(const GameState& state);
 
     /**
      * @brief Adds a new peer to the network
@@ -116,12 +122,6 @@ private:
     void distributeEconomyCalculations(const GameState& state);
 
     /**
-     * @brief Synchronizes game state with all peers
-     * @param state [in] Current game state to synchronize
-     */
-    void synchronizeState(const GameState& state);
-
-    /**
      * @brief Distributes traffic simulation load among peers
      * @param state [in] Current game state to process
      */
@@ -144,7 +144,7 @@ private:
     };
 
     //! @brief Main communication socket
-    sf::UdpSocket m_socket;
+    sf::UdpSocket m_game_socket;
     //! @brief Discovery broadcast socket
     sf::UdpSocket m_discovery_socket;
     //! @brief Connected peers

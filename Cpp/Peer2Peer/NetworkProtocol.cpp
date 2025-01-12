@@ -26,7 +26,7 @@ sf::Packet NetworkProtocol::createEconomyCalculationPacket(sf::Uint32 startIdx, 
 {
     std::cout << "Creating economy calculation packet startIdx: " << startIdx << " count: " << count << std::endl;
     sf::Packet packet;
-    packet << static_cast<sf::Uint8>(GameMessageType::ECONOMY_UPDATE);
+    packet << static_cast<sf::Uint8>(GameMessageType::ECONOMY_DISTRIBUTION);
     packet << startIdx;
     packet << count;
     return packet;
@@ -37,7 +37,7 @@ sf::Packet NetworkProtocol::createTrafficCalculationPacket(sf::Uint32 zoneStartI
 {
     std::cout << "Creating traffic calculation packet startIdx: " << zoneStartIdx << " count: " << zoneCount << std::endl;
     sf::Packet packet;
-    packet << static_cast<sf::Uint8>(GameMessageType::TRAFFIC_UPDATE);
+    packet << static_cast<sf::Uint8>(GameMessageType::TRAFFIC_DISTRIBUTION);
     packet << zoneStartIdx;
     packet << zoneCount;
     return packet;
@@ -63,6 +63,8 @@ void NetworkProtocol::processTrafficUpdate(sf::Packet& packet, GameState& state)
 {
     sf::Uint32 startIdx, count;
     packet >> startIdx >> count;
+    state.traffic.startIdx = startIdx;
+    state.traffic.count = count;
 
     std::cout << "Processing traffic update packet startIdx: " << startIdx << " count: " << count << std::endl;
 
@@ -86,6 +88,8 @@ void NetworkProtocol::processEconomyUpdate(sf::Packet& packet, GameState& state)
 {
     sf::Uint32 startIdx, count;
     packet >> startIdx >> count;
+    state.economy.startIdx = startIdx;
+    state.economy.count = count;
 
     std::cout << "Processing economy update packet startIdx: " << startIdx << " count: " << count << std::endl;
 
@@ -117,4 +121,42 @@ void NetworkProtocol::processClientStateUpdate(sf::Packet& packet, GameState& st
     // Note: Here we could add a validation or conflict resolution logic
     state.traffic = clientState.traffic;
     state.economy = clientState.economy;
+}
+
+// ----------------------------------------------------------------------------
+sf::Packet NetworkProtocol::createPlayerStatePacket(const GameState& state, sf::Uint32 startIdx, sf::Uint32 count)
+{
+    sf::Packet packet;
+    packet << static_cast<sf::Uint8>(GameMessageType::PLAYER_STATE);
+    packet << startIdx << count;
+
+    // Send player states for the specified range
+    for (sf::Uint32 i = 0; i < count; ++i)
+    {
+        if (startIdx + i < state.traffic.cars.size())
+        {
+            packet << state.traffic.cars[startIdx + i];
+        }
+    }
+    return packet;
+}
+
+// ----------------------------------------------------------------------------
+void NetworkProtocol::processPlayerStateUpdate(sf::Packet& packet, GameState& state)
+{
+    sf::Uint32 startIdx, count;
+    packet >> startIdx >> count;
+
+    // Verify bounds
+    if (startIdx + count > state.players.size())
+    {
+        std::cerr << "Warning: Player state update packet contains invalid range" << std::endl;
+        return;
+    }
+
+    // Update player states
+    for (sf::Uint32 i = 0; i < count; ++i)
+    {
+        packet >> state.players[startIdx + i];
+    }
 }

@@ -71,10 +71,10 @@ The protocol uses two UDP sockets per node:
      - 5s timeout for inactive peers
 
 2. **Game Socket (Custom Port)**
-   - `TRAFFIC_UPDATE`
+   - `TRAFFIC_DISTRIBUTION`
      - Host->Client: Assigns car subset for movement calculation
      - Client->Host: Returns updated car positions
-   - `ECONOMY_UPDATE`
+   - `ECONOMY_DISTRIBUTION`
      - Host->Client: Assigns building subset for income calculation
      - Client->Host: Returns updated building states
    - `STATE_SYNC`
@@ -98,11 +98,11 @@ The protocol uses two UDP sockets per node:
    ```
    Host                    Client
     |                        |
-    |-- TRAFFIC_UPDATE ----->|
+    |-- TRAFFIC_DISTRIBUTION ----->|
     |                        |-- Process cars
     |<-- Updated positions --|
     |                        |
-    |-- ECONOMY_UPDATE ----->|
+    |-- ECONOMY_DISTRIBUTION ----->|
     |                        |-- Process buildings
     |<-- Updated economy ----|
     |                        |

@@ -12,12 +12,12 @@ NetworkNode::NetworkNode(unsigned short port, bool hosting) : m_is_host(hosting)
               << port << " and discovery port " << DISCOVERY_PORT << std::endl;
 
     // Game communication socket.
-    if (m_socket.bind(port) != sf::Socket::Done)
+    if (m_game_socket.bind(port) != sf::Socket::Done)
     {
         throw std::runtime_error("Failed to bind socket to port " +
                                  std::to_string(port));
     }
-    m_socket.setBlocking(false);
+    m_game_socket.setBlocking(false);
 
     // Discovery socket for finding peers. Client starts with a random port.
     unsigned short discovery_port = (m_is_host)
@@ -32,6 +32,7 @@ NetworkNode::NetworkNode(unsigned short port, bool hosting) : m_is_host(hosting)
 // ----------------------------------------------------------------------------
 void NetworkNode::update(float deltaTime, GameState& state, sf::Color color)
 {
+    //std::cout << "==================================" << std::endl;
     // Discovery channel
     updatePeerDiscovery(deltaTime);
     receiveDiscoveryPackets();
@@ -42,7 +43,9 @@ void NetworkNode::update(float deltaTime, GameState& state, sf::Color color)
     {
         if (hasAvailableNodes())
         {
+            std::cout << "Distributing traffic load" << std::endl;
             distributeTrafficLoad(state);
+            std::cout << "Distributing economy calculations" << std::endl;
             distributeEconomyCalculations(state);
         }
         m_peers_updated = false;
@@ -54,20 +57,20 @@ void NetworkNode::update(float deltaTime, GameState& state, sf::Color color)
     // Client->Host: Clients send their game states to the host
     if (!m_is_host)
     {
-        updateClientState(deltaTime, state, color);
+        updateGameStateFromClient(deltaTime, state, color);
     }
 
     // Host->Clients: synchronize client game states
     if (m_is_host && hasAvailableNodes())
     {
-        synchronizeState(state);
+        synchronizeClientGameStates(state);
     }
 }
 
 // ----------------------------------------------------------------------------
-void NetworkNode::updateClientState(float deltaTime, GameState& state, sf::Color color)
+void NetworkNode::updateGameStateFromClient(float deltaTime, GameState& state, sf::Color color)
 {
-    std::cout << "Updating client state" << std::endl;
+    //std::cout << "Updating client state" << std::endl;
 
     // Update local state
     GameManager::update(state, deltaTime, color);
@@ -77,12 +80,39 @@ void NetworkNode::updateClientState(float deltaTime, GameState& state, sf::Color
     {
         if (peer.is_active && name == "host")
         {
-            sf::Packet packet = NetworkProtocol::createStateSyncPacket(state);
-            if (m_socket.send(packet, peer.address, peer.port) != sf::Socket::Done)
+            sf::Packet packet = NetworkProtocol::createPlayerStatePacket(state);
+            if (m_game_socket.send(packet, peer.address, peer.port) != sf::Socket::Done)
             {
                 std::cerr << "Failed to send state update to host" << std::endl;
             }
             break;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void NetworkNode::synchronizeClientGameStates(const GameState& state)
+{
+    // std::cout << "Synchronizing state" << std::endl;
+
+    // Validate game state data
+    if (!GameManager::validateState(state))
+    {
+        std::cerr << "Warning: Invalid game state detected" << std::endl;
+        return;
+    }
+
+    // Prepare synchronization packet
+    sf::Packet packet = NetworkProtocol::createStateSyncPacket(state);
+
+    // Broadcast to active peers
+    for (auto const& [name, peer_info] : m_peers)
+    {
+        if (m_game_socket.send(packet, peer_info.address, peer_info.port) !=
+            sf::Socket::Done)
+        {
+            std::cerr << "Warning: Failed to send state to peer " << name
+                      << std::endl;
         }
     }
 }
@@ -99,23 +129,23 @@ void NetworkNode::updatePeerDiscovery(float deltaTime)
         if (m_is_host)
         {
             // Host broadcasts its presence.
-            sf::Packet packet = NetworkProtocol::createDiscoveryPacket(m_socket.getLocalPort());
+            sf::Packet packet = NetworkProtocol::createDiscoveryPacket(m_game_socket.getLocalPort());
             m_discovery_socket.send(packet, sf::IpAddress::Broadcast, DISCOVERY_PORT);
         }
         else if (m_peers.empty()) // Client without connection
         {
             // The client sends a ping to the discovery port of the host for its subscription.
-            sf::Packet packet = NetworkProtocol::createPingPacket(m_socket.getLocalPort());
+            sf::Packet packet = NetworkProtocol::createPingPacket(m_game_socket.getLocalPort());
             m_discovery_socket.send(packet, sf::IpAddress::LocalHost, DISCOVERY_PORT);
         }
         else // Client connected
         {
             // Send regular pings to the host to keep it aware of the client's presence,
             // else the host will timeout the client.
-            sf::Packet packet = NetworkProtocol::createPingPacket(m_socket.getLocalPort()   );
+            sf::Packet packet = NetworkProtocol::createPingPacket(m_game_socket.getLocalPort()   );
             for (auto& [name, peer] : m_peers)
             {
-                if (m_socket.send(packet, peer.address, peer.port) != sf::Socket::Done)
+                if (m_game_socket.send(packet, peer.address, peer.port) != sf::Socket::Done)
                 {
                     std::cerr << "Failed to send ping to " << name << std::endl;
                 }
@@ -225,7 +255,7 @@ void NetworkNode::receiveGamePackets(GameState& state)
     while (true)
     {
         sf::Socket::Status status =
-            m_socket.receive(packet, sender, senderPort);
+            m_game_socket.receive(packet, sender, senderPort);
 
         if (status == sf::Socket::Done)
         {
@@ -244,13 +274,16 @@ void NetworkNode::receiveGamePackets(GameState& state)
             packet >> messageType;
             switch (GameMessageType(messageType))
             {
-                case GameMessageType::TRAFFIC_UPDATE:
+                case GameMessageType::TRAFFIC_DISTRIBUTION:
+                    std::cout << "Processing traffic update" << std::endl;
                     NetworkProtocol::processTrafficUpdate(packet, state);
                     break;
-                case GameMessageType::ECONOMY_UPDATE:
+                case GameMessageType::ECONOMY_DISTRIBUTION:
+                    std::cout << "Processing economy update" << std::endl;
                     NetworkProtocol::processEconomyUpdate(packet, state);
                     break;
                 case GameMessageType::STATE_SYNC:
+                    //std::cout << "Processing state sync" << std::endl;
                     NetworkProtocol::processStateSync(packet, state);
                     break;
             }
@@ -315,24 +348,21 @@ void NetworkNode::distributeTrafficLoad(const GameState& state)
     size_t start_idx = 0;
     for (auto const& [name, peer_info] : m_peers)
     {
-        if (peer_info.is_active)
+        // Check bounds
+        size_t end_idx = std::min(start_idx + cars_per_peer,
+                                state.traffic.cars.size());
+
+        if (start_idx >= end_idx)
         {
-            // Check bounds
-            size_t end_idx = std::min(start_idx + cars_per_peer,
-                                    state.traffic.cars.size());
-
-            if (start_idx >= end_idx)
-            {
-                break;
-            }
-
-            // Send calculation request
-            sf::Packet packet = NetworkProtocol::createTrafficCalculationPacket(
-                static_cast<sf::Uint32>(start_idx),
-                static_cast<sf::Uint32>(end_idx - start_idx));
-            m_socket.send(packet, peer_info.address, peer_info.port);
-            start_idx = end_idx;
+            break;
         }
+
+        // Send calculation request
+        sf::Packet packet = NetworkProtocol::createTrafficCalculationPacket(
+            static_cast<sf::Uint32>(start_idx),
+            static_cast<sf::Uint32>(end_idx - start_idx));
+        m_game_socket.send(packet, peer_info.address, peer_info.port);
+        start_idx = end_idx;
     }
 }
 
@@ -370,52 +400,19 @@ void NetworkNode::distributeEconomyCalculations(const GameState& state)
     size_t start_idx = 0;
     for (auto const& [name, peer_info] : m_peers)
     {
-        if (peer_info.is_active)
+        // Check bounds
+        size_t end_idx = std::min(start_idx + buildings_per_peer,
+                                    state.economy.buildings.size());
+
+        if (start_idx >= end_idx)
         {
-            // Check bounds
-            size_t end_idx = std::min(start_idx + buildings_per_peer,
-                                      state.economy.buildings.size());
-
-            if (start_idx >= end_idx)
-            {
-                break;
-            }
-
-            // Send calculation request
-            sf::Packet packet = NetworkProtocol::createEconomyCalculationPacket(start_idx, end_idx - start_idx);
-            m_socket.send(packet, peer_info.address, peer_info.port);
-            start_idx = end_idx;
+            break;
         }
-    }
-}
 
-// ----------------------------------------------------------------------------
-void NetworkNode::synchronizeState(const GameState& state)
-{
-    std::cout << "Synchronizing state" << std::endl;
-
-    // Validate game state data
-    if (!GameManager::validateState(state))
-    {
-        std::cerr << "Warning: Invalid game state detected" << std::endl;
-        return;
-    }
-
-    // Prepare synchronization packet
-    sf::Packet packet = NetworkProtocol::createStateSyncPacket(state);
-
-    // Broadcast to active peers
-    for (auto const& [name, peer_info] : m_peers)
-    {
-        if (peer_info.is_active)
-        {
-            if (m_socket.send(packet, peer_info.address, peer_info.port) !=
-                sf::Socket::Done)
-            {
-                std::cerr << "Warning: Failed to send state to peer " << name
-                          << std::endl;
-            }
-        }
+        // Send calculation request
+        sf::Packet packet = NetworkProtocol::createEconomyCalculationPacket(start_idx, end_idx - start_idx);
+        m_game_socket.send(packet, peer_info.address, peer_info.port);
+        start_idx = end_idx;
     }
 }
 
@@ -462,7 +459,7 @@ size_t NetworkNode::getActivePeerCount() const
 // ----------------------------------------------------------------------------
 unsigned short NetworkNode::getPort() const
 {
-    return m_socket.getLocalPort();
+    return m_game_socket.getLocalPort();
 }
 
 // ----------------------------------------------------------------------------

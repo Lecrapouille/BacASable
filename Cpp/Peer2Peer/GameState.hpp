@@ -63,6 +63,10 @@ struct GameState
         std::vector<Car> cars;
         //! @brief List of all roads
         std::vector<Road> roads;
+        //! @brief Start index of the traffic update
+        sf::Uint32 startIdx = 0;
+        //! @brief Count of the traffic update
+        sf::Uint32 count = 0;
     } traffic;
 
     /**
@@ -76,5 +80,9 @@ struct GameState
         float money = 0.0f;
         //! @brief Current tax rate
         float tax_rate = 0.0f;
+        //! @brief Start index of the economy update
+        sf::Uint32 startIdx = 0;
+        //! @brief Count of the economy update
+        sf::Uint32 count = 0;
     } economy;
 };

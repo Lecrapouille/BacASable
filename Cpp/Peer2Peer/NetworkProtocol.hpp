@@ -21,13 +21,17 @@ enum class GameMessageType : sf::Uint8
 {
     // Host->Client: Request traffic calculation for a subset of cars.
     // Client->Host: Response with updated car positions.
-    TRAFFIC_UPDATE = 0,
+    TRAFFIC_DISTRIBUTION = 0,
     // Host->Client: Request economic calculation for a subset of buildings.
     // Client->Host: Response with updated building incomes.
-    ECONOMY_UPDATE = 1,
+    ECONOMY_DISTRIBUTION,
     // Host->All Clients: Full game state broadcast.
     // Sent periodically to ensure all clients are synchronized
-    STATE_SYNC = 2
+    STATE_SYNC,
+    // Client->Host: Response to TRAFFIC_DISTRIBUTION with updated player states
+    TRAFFIC_UPDATED,
+    // Client->Host: Response to ECONOMY_DISTRIBUTION with updated player states
+    ECONOMY_UPDATED,
 };
 
 /**
@@ -114,4 +118,22 @@ public:
      * @param[in] state Game state to update.
      */
     static void processClientStateUpdate(sf::Packet& packet, GameState& state);
+
+    /**
+     * @brief Creates a player state update packet.
+     * @details Host divides player state updates among connected clients.
+     *          Each client processes a subset of players.
+     * @param[in] state Current game state containing player information.
+     * @param[in] startIdx First player index to process.
+     * @param[in] count Number of players to process.
+     * @return Packet containing player state update request.
+     */
+    static sf::Packet createPlayerStatePacket(const GameState& state, sf::Uint32 startIdx, sf::Uint32 count);
+
+    /**
+     * @brief Processes a player state update packet.
+     * @param[in] packet Packet containing the player state update.
+     * @param[in] state Game state to update.
+     */
+    static void processPlayerStateUpdate(sf::Packet& packet, GameState& state);
 };
