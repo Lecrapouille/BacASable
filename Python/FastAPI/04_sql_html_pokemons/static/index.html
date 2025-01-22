@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex FastAPI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>Pokédex FastAPI</h1>
+        <div class="controls">
+            <button id="initDb">Initialiser la DB</button>
+            <button id="clearDb">Vider la DB</button>
+            <div class="filters">
+                <input type="text" id="typeFilter" placeholder="Filtrer par type">
+                <input type="number" id="powerFilter" placeholder="Puissance minimum">
+                <button id="applyFilters">Filtrer</button>
+                <button id="showAllPokemons">Afficher tous</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="pokemon-grid" id="pokemonGrid">
+            <!-- Les cartes Pokémon seront ajoutées ici dynamiquement -->
+        </div>
+
+        <div class="add-pokemon-form">
+            <h2>Ajouter un Pokémon</h2>
+            <form id="addPokemonForm">
+                <input type="text" id="pokemonName" placeholder="Nom" required>
+                <input type="text" id="pokemonType" placeholder="Type" required>
+                <input type="number" id="pokemonPower" placeholder="Puissance" required>
+                <button type="submit">Ajouter</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html> 
