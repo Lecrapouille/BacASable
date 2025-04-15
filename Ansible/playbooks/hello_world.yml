@@ -1,0 +1,12 @@
+---
+- name: Hello World Playbook
+  hosts: local
+  become: yes # Necessary for root operations
+  # become_user: "{{ ansible_user_id }}"
+
+  roles:
+    - role: hello_world
+      # Override the role variables
+      hello_dir: /tmp/my_ansible_project
+      hello_owner: "{{ ansible_user_id }}"
+      hello_group: "{{ ansible_user_id }}"

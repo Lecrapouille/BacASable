@@ -1,0 +1,24 @@
+---
+- name: Create directory in /tmp
+  file:
+    path: "{{ hello_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ hello_owner }}"
+    group: "{{ hello_group }}"
+
+- name: Copy Python script
+  copy:
+    src: hello.py
+    dest: "{{ hello_dir }}/hello.py"
+    mode: '0755'
+    owner: "{{ hello_owner }}"
+    group: "{{ hello_group }}"
+
+- name: Execute Python script
+  command: "python3 {{ hello_dir }}/hello.py"
+  register: script_output
+
+- name: Display script output
+  debug:
+    var: script_output.stdout_lines

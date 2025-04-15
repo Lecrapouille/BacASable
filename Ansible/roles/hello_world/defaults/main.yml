@@ -1,0 +1,5 @@
+---
+# Default variables for hello_world role
+hello_dir: /tmp/ansible_hello
+hello_owner: root
+hello_group: root
