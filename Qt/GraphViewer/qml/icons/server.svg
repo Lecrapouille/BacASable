@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#007acc">
+    <path d="M4 1h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1zM3 16a1 1 0 011-1h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm1-6a1 1 0 011-1h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4z"/>
+    <!-- Server indicators -->
+    <circle cx="18" cy="3.5" r="0.5" fill="#ffffff"/>
+    <circle cx="18" cy="11.5" r="0.5" fill="#ffffff"/>
+    <circle cx="18" cy="19.5" r="0.5" fill="#ffffff"/>
+    <rect x="6" y="2.5" width="8" height="1" rx="0.5" fill="#ffffff" opacity="0.7"/>
+    <rect x="6" y="10.5" width="8" height="1" rx="0.5" fill="#ffffff" opacity="0.7"/>
+    <rect x="6" y="18.5" width="8" height="1" rx="0.5" fill="#ffffff" opacity="0.7"/>
+</svg> 

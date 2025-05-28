@@ -8,7 +8,13 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    // Enregistrer le type Arc avec QML
+    // Configuration of the application metadata
+    app.setApplicationName("PetriNetViewer");
+    app.setApplicationVersion("1.0.0");
+    app.setOrganizationName("Lecrapouille");
+    app.setOrganizationDomain("lecrappouille.com");
+
+    // Register the Arc type with QML
     qRegisterMetaType<Arc>();
 
     // Create the model
@@ -25,9 +31,9 @@ int main(int argc, char *argv[])
     QUrl source("qrc:/main.qml");
     window->quickWidget()->setSource(source);
 
-    // Vérifier si le chargement a réussi
+    // Check if the loading was successful
     if (window->quickWidget()->status() == QQuickWidget::Error) {
-        qDebug() << "Erreurs lors du chargement du QML:";
+        qDebug() << "Errors while loading the QML:";
         for (const QQmlError &error : window->quickWidget()->errors()) {
             qDebug() << error.toString();
         }

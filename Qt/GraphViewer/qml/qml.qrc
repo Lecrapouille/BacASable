@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>icons/server.svg</file>
+        <file>icons/database.svg</file>
+        <file>icons/client.svg</file>
+        <file>icons/router.svg</file>
+    </qresource>
+</RCC>

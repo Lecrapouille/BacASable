@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ffc107">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    <!-- Router connections -->
+    <circle cx="12" cy="12" r="3" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.7"/>
+    <circle cx="12" cy="12" r="1.5" fill="#ffffff" opacity="0.8"/>
+    <!-- Signal indicators -->
+    <line x1="12" y1="8" x2="12" y2="6" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+    <line x1="15.5" y1="10.5" x2="17" y2="9" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+    <line x1="15.5" y1="13.5" x2="17" y2="15" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+    <line x1="8.5" y1="10.5" x2="7" y2="9" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+    <line x1="8.5" y1="13.5" x2="7" y2="15" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+    <line x1="12" y1="16" x2="12" y2="18" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+</svg> 

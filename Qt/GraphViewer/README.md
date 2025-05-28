@@ -1,8 +1,8 @@
-# Petri Net Viewer in Qt6
+# Graph Viewer in Qt6
 
-POC for a Petri Net Viewer in Qt6. Probably will be used in https://github.com/Lecrapouille/TimedPetriNetEditor
+POC for a graph Viewer in Qt6.
 
-![PetriNetViewer](Petri.png)
+![GraphViewer](GraphViewer.png)
 
 ## Build
 
@@ -13,13 +13,15 @@ POC for a Petri Net Viewer in Qt6. Probably will be used in https://github.com/L
 ## Run
 
 ```bash
-./build/PetriNetViewer
+./build/GraphViewer
 ```
 
 ## Prerequisites
 
 ```bash
 sudo apt install qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-tools-dev-tools qt6-qmake qml6-module-qtquick-controls qml6-module-qtqml-workerscript qml6-module-qtquick-layouts
+
+sudo apt-get install qt6-svg-dev libqt6svg6-dev
 
 sudo apt install \
     qml6-module-qtquick-templates \
@@ -29,5 +31,5 @@ sudo apt install \
     qml6-module-qtquick-layouts \
     qml6-module-qt-labs-platform \
     qml6-module-qtqml-workerscript \
-    qml6-module-qtquick-window
+    qml6-module-qtquick-window 
 ```
