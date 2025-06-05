@@ -42,9 +42,9 @@
           <set>Qt::AlignCenter</set>
          </property>
          <property name="styleSheet">
-          <string notr="true">QLabel { 
-    background-color: #f0f0f0; 
-    border: 2px dashed #ccc; 
+          <string notr="true">QLabel {
+    background-color: #f0f0f0;
+    border: 2px dashed #ccc;
     font-size: 14px;
     color: #666;
 }</string>

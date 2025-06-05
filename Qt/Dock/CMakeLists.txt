@@ -18,6 +18,8 @@ add_executable(Qt6DisplayApp
     MainWindow.cpp
     MainWindow.hpp
     MainWindow.ui
+    DrawingWidget.cpp
+    DrawingWidget.hpp
 )
 
 # Link with Qt6 libraries

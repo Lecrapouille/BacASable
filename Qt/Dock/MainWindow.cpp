@@ -5,6 +5,7 @@
 #include <QTextEdit>
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QMessageBox>
 #include <QApplication>
 
@@ -14,15 +15,20 @@ MainWindow::MainWindow(QWidget *p_parent)
 {
     ui->setupUi(this);
 
-    // Configure the main window
     setWindowTitle("Qt6 Application - Display with Buttons");
     resize(1000, 700);
 
-    // Create the main QDockWidget for the display
+    createCentralDrawingArea();
     createDisplayDock();
-
-    // Connect the buttons signals
+    createButtonPanelDock();
     connectButtons();
+
+    // Configure dock constraints - docks can only be placed on left, top, bottom
+    setCorner(Qt::TopRightCorner, Qt::RightDockWidgetArea);
+    setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
+
+    // Organize docks with specific sizes
+    organizeDocks();
 
     // Configure the status bar
     statusBar()->showMessage("Application ready", 2000);
@@ -33,10 +39,32 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::createButtonPanelDock()
+{
+    // Create a dock for the button panel
+    m_buttonPanelDock = new QDockWidget("Controls", this);
+    m_buttonPanelDock->setAllowedAreas(Qt::RightDockWidgetArea); // Only right side
+    
+    // Extract the button panel from the UI and put it in the dock
+    QWidget *buttonPanel = ui->buttonPanel;
+    buttonPanel->setParent(nullptr); // Remove from current parent
+    
+    // Configure the dock
+    m_buttonPanelDock->setWidget(buttonPanel);
+    m_buttonPanelDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // Fixed dock
+    
+    // Add the dock to the right area
+    addDockWidget(Qt::RightDockWidgetArea, m_buttonPanelDock);
+    
+    // Split so that button panel is to the RIGHT of display dock
+    splitDockWidget(m_displayDock, m_buttonPanelDock, Qt::Horizontal);
+}
+
 void MainWindow::createDisplayDock()
 {
-    // Create the QDockWidget   
+    // Create the QDockWidget
     m_displayDock = new QDockWidget("Main display zone", this);
+    // Allow ALL areas including right (so it can be placed left of button panel)
     m_displayDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
 
     // Container widget for the display
@@ -61,17 +89,14 @@ void MainWindow::createDisplayDock()
     layout->addWidget(infoLabel);
     layout->addWidget(m_displayArea);
 
-    // Configure the dock
+    // Configure the dock - make it fully detachable
     m_displayDock->setWidget(displayWidget);
     m_displayDock->setFeatures(QDockWidget::DockWidgetMovable |
                               QDockWidget::DockWidgetFloatable |
                               QDockWidget::DockWidgetClosable);
 
-    // Add the dock to the main window (central area)
-    addDockWidget(Qt::LeftDockWidgetArea, m_displayDock);
-
-    // Hide the placeholder widget of the UI file
-    ui->displayLabel->hide();
+    // Add the dock to the right area FIRST
+    addDockWidget(Qt::RightDockWidgetArea, m_displayDock);
 }
 
 void MainWindow::connectButtons()
@@ -137,5 +162,31 @@ void MainWindow::toggleFullScreen()
     {
         showFullScreen();
         statusBar()->showMessage("Fullscreen mode", 2000);
+    }
+}
+
+void MainWindow::createCentralDrawingArea()
+{
+    // Create the drawing widget with grid and set it as central widget
+    m_drawingArea = new DrawingWidget();
+    setCentralWidget(m_drawingArea);
+    
+    // Hide the placeholder from UI file
+    ui->centralwidget->hide();
+}
+
+void MainWindow::organizeDocks()
+{
+    // Set specific sizes for docks
+    QList<QDockWidget*> docks = {m_displayDock};
+    QList<int> sizes = {300}; // Width of display dock
+    
+    // Resize the display dock to have a reasonable width
+    resizeDocks(docks, sizes, Qt::Horizontal);
+    
+    // Make sure the display dock is positioned nicely
+    if (m_displayDock) {
+        // Start with a reasonable size
+        m_displayDock->resize(300, m_displayDock->height());
     }
 }

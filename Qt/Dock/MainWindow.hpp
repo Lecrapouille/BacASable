@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QTextEdit>
+#include "DrawingWidget.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,10 +31,15 @@ private slots:
 
 private:
     void createDisplayDock();
+    void createButtonPanelDock();
+    void createCentralDrawingArea();
+    void organizeDocks();
     void connectButtons();
 
 private:
     Ui::MainWindow *ui;
     QDockWidget *m_displayDock;
+    QDockWidget *m_buttonPanelDock;
     QTextEdit *m_displayArea;
+    DrawingWidget *m_drawingArea;
 };
