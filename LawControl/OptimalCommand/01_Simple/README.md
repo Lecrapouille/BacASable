@@ -23,7 +23,7 @@
 
 Soit un problème d'optimisation avec contraintes :
 - On cherche à **minimiser** la fonction objectif $f(x, u)$
-- **sous contrainte** : $g(x, u) = 0$.
+- **sous la contrainte** de $g(x, u) = 0$.
 
 **Terminologie** :
 - **Problème primal** : le problème d'optimisation original à résoudre. *Ex: minimiser le coût de carburant d'un trajet.*
@@ -36,11 +36,14 @@ Soit un problème d'optimisation avec contraintes :
 
 1. **Construction du Lagrangien** :
    $$\mathcal{L}(x, u, \lambda) = f(x, u) + \lambda \cdot g(x, u)$$
+
    où $\lambda$ est le multiplicateur de Lagrange.
+
+   **Note** : Le symbole $\cdot$ représente la **multiplication**, ici entre le scalaire $\lambda$ et l'expression $g(x, u)$.
 
 2. **Conditions d'optimalité** :
    $$\nabla \mathcal{L} = 0$$
-   
+
    Ce qui donne le système :
    $$\frac{\partial \mathcal{L}}{\partial x} = 0, \quad \frac{\partial \mathcal{L}}{\partial u} = 0, \quad \frac{\partial \mathcal{L}}{\partial \lambda} = 0$$
 
@@ -68,7 +71,9 @@ $$\mathcal{L}(x, u, \lambda_1, \lambda_2, \ldots, \lambda_p) = f(x, u) + \sum_{i
 
 En posant $\mathbf{g}(x,u) = [g_1(x,u), g_2(x,u), \ldots, g_p(x,u)]^T$ et $\boldsymbol{\lambda} = [\lambda_1, \lambda_2, \ldots, \lambda_p]^T$ :
 
-$$\mathcal{L}(x, u, \boldsymbol{\lambda}) = f(x, u) + \boldsymbol{\lambda}^T \mathbf{g}(x, u)$$
+$$\mathcal{L}(x, u, \boldsymbol{\lambda}) = f(x, u) + \boldsymbol{\lambda}^T \cdot \mathbf{g}(x, u)$$
+
+**Note:** Le symbole $\cdot$ représente le produit scalaire. Le symbole $^T$ représente la **transposée**, qui transforme un vecteur ligne en vecteur colonne.
 
 #### Conditions d'optimalité
 
@@ -119,15 +124,39 @@ où :
 
 ### 3.1 Construction du Hamiltonien
 
+#### Du Lagrangien au Hamiltonien : pourquoi changer ?
+
+**Problème avec le Lagrangien classique** :
+- Dans les sections précédentes : $\mathcal{L}(x, u, \lambda) = f(x, u) + \lambda \cdot g(x, u)$
+- Fonctionne bien pour l'optimisation **sans temps**
+- Mais en commande optimale, la contrainte est **dynamique** : $\dot{x} = f(x, u)$
+
+**Solution : le Hamiltonien** :
+- Adapte le Lagrangien aux problèmes **avec évolution temporelle**
+- Traite spécifiquement les contraintes de type $\dot{x} = f(x, u)$
+
+#### Construction du Hamiltonien
+
 Le Hamiltonien généralise le Lagrangien pour les systèmes dynamiques :
 
 $$H(x, u, \boldsymbol{\lambda}, t) = L(x, u) + \boldsymbol{\lambda}^T f(x, u)$$
 
 où $\boldsymbol{\lambda}(t) \in \mathbb{R}^n$ est le **vecteur adjoint** (multiplicateur de Lagrange temporel).
 
-#### Cas avec contraintes multiples
+#### Comparaison Lagrangien vs Hamiltonien
 
-Si le système a plusieurs contraintes dynamiques $\dot{x}_i = f_i(x, u)$ pour $i = 1, \ldots, n$, alors :
+| Aspect | Lagrangien classique | Hamiltonien |
+|--------|---------------------|-------------|
+| **Contrainte** | $g(x, u) = 0$ (algébrique) | $\dot{x} = f(x, u)$ (différentielle) |
+| **Formule** | $\mathcal{L} = \text{coût} + \lambda \cdot \text{contrainte}$ | $H = \text{coût} + \lambda \cdot \text{dynamique}$ |
+| **Multiplicateur** | $\lambda$ (constant) | $\lambda(t)$ (fonction du temps) |
+| **Application** | Optimisation statique | Commande optimale |
+
+**L'idée clé** : Le Hamiltonien $H$ remplace simplement la contrainte algébrique $g(x,u)$ par la dynamique $f(x,u)$ !
+
+#### Cas avec états multiples
+
+Si le système a plusieurs états $x_i(t)$ et donc plusieurs équations dynamiques $\dot{x}_i = f_i(x, u)$ pour $i = 1, \ldots, n$, alors :
 
 - **Vecteur d'état** : $\mathbf{x}(t) = [x_1(t), x_2(t), \ldots, x_n(t)]^T$
 - **Vecteur adjoint** : $\boldsymbol{\lambda}(t) = [\lambda_1(t), \lambda_2(t), \ldots, \lambda_n(t)]^T$
@@ -138,11 +167,35 @@ $$H(\mathbf{x}, u, \boldsymbol{\lambda}, t) = L(\mathbf{x}, u) + \boldsymbol{\la
 
 ### 3.2 Conditions nécessaires d'optimalité
 
-#### Équations d'état (forward)
+#### Équations d'état: Vers l'avant dans le temps (forward)
 $$\dot{x}(t) = \frac{\partial H}{\partial \lambda} = f(x, u)$$
 
-#### Équations adjointes (backward)
+- On connaît $x(0)$ (condition initiale).
+- On intègre de $t = 0$ vers $t = T$.
+- $x$ évolue naturellement du passé vers le futur.
+
+#### Équations adjointes: Vers l'arrière dans le temps (backward)
 $$\dot{\lambda}(t) = -\frac{\partial H}{\partial x}$$
+
+- On connaît $\lambda(T)$ (condition finale).
+- On intègre de $t = T$ vers $t = 0$.
+- $\lambda$ "remonte" du futur vers le passé.
+
+#### Illustration du sens d'intégration
+
+```
+États x(t) :     x(0) ────────────────► x(T)
+                 donné                 calculé
+                 (Forward: t = 0 → T)
+
+Adjoints λ(t) :  λ(0) ◄──────────────── λ(T)
+                 calculé               donné
+                 (Backward: t = T → 0)
+```
+
+**Pourquoi cette différence ?**
+- **États** : évolution naturelle d'un système physique (du présent vers le futur)
+- **Adjoints** : "prix" calculé en remontant depuis l'objectif final (du futur vers le présent)
 
 #### Condition d'optimalité sur la commande
 $$\frac{\partial H}{\partial u} = 0 \quad \text{ou} \quad u^*(t) = \arg\min_u H(x, u, \lambda, t)$$
@@ -156,10 +209,41 @@ $$\frac{\partial H}{\partial u} = 0 \quad \text{ou} \quad u^*(t) = \arg\min_u H(
 - Il indique l'impact d'une variation infinitésimale de $x_i(t)$ sur le coût total
 - C'est le "prix" associé à chaque composante de l'état
 
-### 3.4 Dérivation par intégration par parties
+### 3.4 Méthode de résolution: intégration par parties
 
-#### Méthode de résolution alternative
 L'intégration par parties est une méthode fondamentale pour dériver les conditions d'optimalité en commande optimale. Elle permet de passer des variations d'état aux variations de commande.
+
+#### Rappel : Qu'est-ce que l'intégration par parties ?
+
+**Principe** : Transformer une intégrale difficile en une intégrale plus simple en "transférant" la dérivation d'une fonction à l'autre.
+
+**Formule générale** :
+$$\int u \, dv = uv - \int v \, du$$
+
+ou encore :
+$$\int_a^b u(x) v'(x) \, dx = u(x)v(x)\Big|_a^b - \int_a^b u'(x) v(x) \, dx$$
+
+#### Pourquoi utiliser l'IPP en commande optimale ?
+
+**Le problème** :
+- On veut optimiser par rapport à la commande $u(t)$
+- Mais on a des termes avec $\delta \dot{x}(t)$ (dérivée de l'état) dans nos variations
+- Or $\delta \dot{x}(t)$ dépend de $\delta u(t)$, ce qui complique l'analyse
+
+**La solution par IPP** :
+- **Éliminer** les termes $\delta \dot{x}(t)$ gênants
+- **Transférer** la dérivation de $\delta x$ vers $\lambda$
+- **Obtenir** une expression où $\delta u(t)$ apparaît directement
+
+#### Analogie concrète
+
+**Pensez à** : $\int_0^T \lambda(t) \cdot \delta \dot{x}(t) \, dt$
+
+- **Sans IPP** : $\delta \dot{x}(t)$ est la dérivée de quelque chose qu'on ne contrôle pas directement
+- **Avec IPP** : On transforme en $\lambda(T)\delta x(T) - \int_0^T \dot{\lambda}(t) \delta x(t) \, dt$
+- **Résultat** : Plus de dérivée de $\delta x$, mais $\lambda$ qui dérive à la place !
+
+**C'est comme** passer de "vitesse de changement de $x$" à "changement de vitesse de $\lambda$".
 
 #### Principe de la variation
 Considérons une petite perturbation $\delta u(t)$ de la commande optimale. Cette perturbation induit une variation $\delta x(t)$ de l'état via :
@@ -305,13 +389,13 @@ for (int iter = 0; iter < max_iter; ++iter) {
         u[i] = -lambda[i] / 2;
         x[i+1] = x[i] + dt * u[i];
     }
-    
+
     // Backward integration for lambda
     lambda[N] = 0.0;  // Condition finale
     for (int i = N-1; i >= 0; --i) {
         lambda[i] = lambda[i+1] + dt * (-2 * x[i+1]);
     }
-    
+
     // Check convergence
     if (convergence_test()) break;
 }
@@ -330,19 +414,19 @@ private:
     const int N;              // Nombre de points
     const double dt;          // Pas de temps
     const double x0;          // Condition initiale
-    
+
     std::vector<double> x, lambda, u;
-    
+
 public:
-    OptimalControlSolver(double T_val, int N_val, double x0_val) 
-        : T(T_val), N(N_val), dt(T/N), x0(x0_val), 
+    OptimalControlSolver(double T_val, int N_val, double x0_val)
+        : T(T_val), N(N_val), dt(T/N), x0(x0_val),
           x(N+1), lambda(N+1), u(N+1) {}
-    
+
     void solve() {
         // Initialisation
         x[0] = x0;
         lambda[N] = 0.0;  // Condition terminale
-        
+
         // Itérations pour résoudre le problème à deux points
         for (int iter = 0; iter < 100; ++iter) {
             // Intégration forward pour x
@@ -350,23 +434,23 @@ public:
                 u[i] = -lambda[i] / 2.0;
                 x[i+1] = x[i] + dt * u[i];
             }
-            
-            // Intégration backward pour lambda  
+
+            // Intégration backward pour lambda
             for (int i = N-1; i >= 0; --i) {
                 lambda[i] = lambda[i+1] + dt * 2.0 * x[i+1];
             }
         }
     }
-    
+
     void printResults() const {
         std::cout << "Résultats de la commande optimale:\n";
         std::cout << "t\t\tx(t)\t\tu(t)\t\tlambda(t)\n";
         for (int i = 0; i <= N; i += N/10) {
-            printf("%.2f\t\t%.4f\t\t%.4f\t\t%.4f\n", 
+            printf("%.2f\t\t%.4f\t\t%.4f\t\t%.4f\n",
                    i*dt, x[i], u[i], lambda[i]);
         }
     }
-    
+
     double computeCost() const {
         double cost = 0.0;
         for (int i = 0; i < N; ++i) {
@@ -380,9 +464,9 @@ int main() {
     OptimalControlSolver solver(5.0, 1000, 1.0);
     solver.solve();
     solver.printResults();
-    
+
     std::cout << "\nCoût total: " << solver.computeCost() << std::endl;
-    
+
     return 0;
 }
 ```
