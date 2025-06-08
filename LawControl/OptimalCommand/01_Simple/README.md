@@ -1,201 +1,413 @@
-# Commande Optimale
+# Commande Optimale : Guide Théorique et Pratique
 
-## Introduction à la méthode de Lagrange
+## Table des matières
+1. [Fondements théoriques](#1-fondements-théoriques)
+   - 1.1 [La méthode des multiplicateurs de Lagrange](#11-la-méthode-des-multiplicateurs-de-lagrange)
+   - 1.2 [Cas de contraintes multiples](#12-cas-de-contraintes-multiples)
+2. [De l'optimisation classique à la commande optimale](#2-de-loptimisation-classique-à-la-commande-optimale)
+3. [Le principe du maximum de Pontryagin](#3-le-principe-du-maximum-de-pontryagin)
+   - 3.1 [Construction du Hamiltonien](#31-construction-du-hamiltonien)
+   - 3.2 [Conditions nécessaires d'optimalité](#32-conditions-nécessaires-doptimalité)
+   - 3.3 [Interprétation du vecteur adjoint](#33-interprétation-du-vecteur-adjoint)
+   - 3.4 [Dérivation par intégration par parties](#34-dérivation-par-intégration-par-parties)
+4. [Exemples d'application](#4-exemples-dapplication)
+5. [Implémentation numérique](#5-implémentation-numérique)
 
-La méthode des multiplicateurs de Lagrange sert à résoudre un problème d'optimisation avec des contraintes.
+---
 
-On veut **minimiser** (ou maximiser) une fonction $f(x, u)$ sous **contraintes** $g(x, u) = 0$.
+## 1. Fondements théoriques
 
-Exemple :
+### 1.1 La méthode des multiplicateurs de Lagrange
 
-> Trouver le point $(x, y)$ qui minimise $f(x, y) = x^2 + y^2$
-> sous la contrainte : $g(x, y) = x + y - 1 = 0$
+#### Problème général
 
-### Qu'est-ce qu'une contrainte ?
+Soit un problème d'optimisation avec contraintes :
+- On cherche à **minimiser** la fonction objectif $f(x, u)$
+- **sous contrainte** : $g(x, u) = 0$.
 
-Imaginons qu'on veuille minimiser le coût de carburant sur un trajet. Mais aussi **arriver à l'heure**. Cette condition est une **contrainte** : on ne peut pas faire ce que l'on veut librement.
+**Terminologie** :
+- **Problème primal** : le problème d'optimisation original à résoudre. *Ex: minimiser le coût de carburant d'un trajet.*
+- **Problème dual** : transformation du problème via multiplicateurs $\lambda$. *Ex: $\lambda$ = impact marginal du temps, de l'énergie.*
+- **Variables de contrôle** $u$ : ce qu'on peut choisir/ajuster (nos degrés de liberté). *Ex: accélération, débit, investissement.*
+- **Variables d'état** $x$ : ce qui évolue selon les lois du système. *Ex: position, vitesse, température, capital.*
+- **Contraintes** : conditions à respecter (égalités, inégalités, dynamiques). *Ex: arriver à l'heure, ne pas dépasser la vitesse limite.*
 
-### Idée principale
+#### Méthode de résolution
 
-Ne pouvant pas minimiser $f$ librement, on doit rester sur la ligne $x + y = 1$. L’idée est d’intégrer la contrainte dans le problème, en la combinant avec une fonction auxiliaire $\lambda$.
+1. **Construction du Lagrangien** :
+   $$\mathcal{L}(x, u, \lambda) = f(x, u) + \lambda \cdot g(x, u)$$
+   où $\lambda$ est le multiplicateur de Lagrange.
 
-On écrit un **Lagrangien** :
+2. **Conditions d'optimalité** :
+   $$\nabla \mathcal{L} = 0$$
+   
+   Ce qui donne le système :
+   $$\frac{\partial \mathcal{L}}{\partial x} = 0, \quad \frac{\partial \mathcal{L}}{\partial u} = 0, \quad \frac{\partial \mathcal{L}}{\partial \lambda} = 0$$
 
-$$\mathcal{L}(x, y, \lambda) = f(x, y) + \lambda \cdot g(x, y)$$
+#### Interprétation physique
 
-Ici :
+Le multiplicateur $\lambda$ représente le **coût marginal** d'imposer la contrainte. Il quantifie l'effet de la contrainte sur la fonction objectif.
 
-$$\mathcal{L}(x, y, \lambda) = x^2 + y^2 + \lambda (x + y - 1)$$
+**Problème dual** : En introduisant $\lambda$, on transforme le problème avec contraintes en un problème sans contraintes. $\lambda$ mesure l'**impact marginal** de la contrainte.
 
-Ensuite on cherche les points où tous les **dérivés (gradients)** sont nuls :
+### 1.2 Cas de contraintes multiples
 
-$$\nabla \mathcal{L} = 0 \quad \text{(système d'équations)}$$
+#### Problème général avec contraintes multiples
+Lorsqu'il y a plusieurs contraintes, on étend naturellement la méthode :
 
-On dérive par rapport à $x$, $y$, et $\lambda$, et on résout le système d'équations :
+- **Minimiser** : $f(x, u)$ (fonction objectif)
+- **Sous contraintes** : $g_1(x, u) = 0, g_2(x, u) = 0, \ldots, g_p(x, u) = 0$
 
-$$\frac{\partial \mathcal{L}}{\partial x} = 0, \quad \frac{\partial \mathcal{L}}{\partial y} = 0, \quad \frac{\partial \mathcal{L}}{\partial \lambda} = 0$$
+#### Lagrangien généralisé
 
-C’est ça, la **méthode de Lagrange** : on transforme un problème à contraintes en un problème sans contrainte avec un multiplicateur $\lambda$.
+On introduit un multiplicateur par contrainte :
 
-* * *
+$$\mathcal{L}(x, u, \lambda_1, \lambda_2, \ldots, \lambda_p) = f(x, u) + \sum_{i=1}^p \lambda_i \cdot g_i(x, u)$$
 
-## Commande optimale : la même idée, mais en dynamique
+#### Notation vectorielle
 
-En **commande optimale**, on cherche une **commande $u(t)$** qui **minimise un coût** tout en respectant une **équation différentielle** (l’évolution de l’état) $\dot{x}(t) = f(x(t), u(t))$.
+En posant $\mathbf{g}(x,u) = [g_1(x,u), g_2(x,u), \ldots, g_p(x,u)]^T$ et $\boldsymbol{\lambda} = [\lambda_1, \lambda_2, \ldots, \lambda_p]^T$ :
 
-Exemple:
+$$\mathcal{L}(x, u, \boldsymbol{\lambda}) = f(x, u) + \boldsymbol{\lambda}^T \mathbf{g}(x, u)$$
 
-> On veut donc trouver une fonction $u(t)$ qui rend la somme des carrés de $u$ et de $x$ aussi petite que possible, tout en respectant la contrainte $\dot{x}(t) = u(t)$ avec une condition initiale $x(0)$ connue.
+#### Conditions d'optimalité
 
-On veut minimiser $J$:
+Le système à résoudre devient :
 
+$$\frac{\partial \mathcal{L}}{\partial x} = 0, \quad \frac{\partial \mathcal{L}}{\partial u} = 0, \quad \frac{\partial \mathcal{L}}{\partial \lambda_i} = 0 \quad \forall i = 1, \ldots, p$$
+
+---
+
+## 2. De l'optimisation classique à la commande optimale
+
+### 2.1 Différences fondamentales
+
+| Aspect | Optimisation classique | Commande optimale |
+|--------|----------------------|-------------------|
+| **Variables** | Valeurs fixes (sans temps) | Fonctions qui évoluent dans le temps |
+| **Contraintes** | Équations algébriques | Équations différentielles |
+| **Horizon** | Instantané | Sur une période de temps |
+| **Complexité** | Système d'équations | Équations différentielles couplées |
+
+### 2.2 Formulation du problème de commande optimale
+
+#### Éléments du problème
+
+- **État** : $x(t) \in \mathbb{R}^n$ (évolution du système)
+- **Commande** : $u(t) \in \mathbb{R}^m$ (variables de décision)
+- **Dynamique** : $\dot{x}(t) = f(x(t), u(t))$ (contrainte dynamique)
+- **Horizon temporel** : $t \in [0, T]$
+
+#### Fonction coût générale
+
+$$J = \int_0^T L(x(t), u(t)) \, dt + \phi(x(T))$$
+
+où :
+- $L(x, u)$ : coût instantané (Lagrangien), par exemple $L(x, u) = q x^2 + r u^2$.
+- $\phi(x(T))$ : coût terminal (quand $t = T$).
+
+#### Contraintes
+
+- **Dynamique** : $\dot{x}(t) = f(x(t), u(t))$
+- **Conditions initiales** : $x(0) = x_0$
+- **Conditions finales** : $\psi(x(T)) = 0$ (optionnel)
+- **Contraintes sur les commandes** : $u(t) \in U$ (optionnel)
+
+---
+
+## 3. Le principe du maximum de Pontryagin
+
+### 3.1 Construction du Hamiltonien
+
+Le Hamiltonien généralise le Lagrangien pour les systèmes dynamiques :
+
+$$H(x, u, \boldsymbol{\lambda}, t) = L(x, u) + \boldsymbol{\lambda}^T f(x, u)$$
+
+où $\boldsymbol{\lambda}(t) \in \mathbb{R}^n$ est le **vecteur adjoint** (multiplicateur de Lagrange temporel).
+
+#### Cas avec contraintes multiples
+
+Si le système a plusieurs contraintes dynamiques $\dot{x}_i = f_i(x, u)$ pour $i = 1, \ldots, n$, alors :
+
+- **Vecteur d'état** : $\mathbf{x}(t) = [x_1(t), x_2(t), \ldots, x_n(t)]^T$
+- **Vecteur adjoint** : $\boldsymbol{\lambda}(t) = [\lambda_1(t), \lambda_2(t), \ldots, \lambda_n(t)]^T$
+- **Dynamique vectorielle** : $\mathbf{f}(x,u) = [f_1(x,u), f_2(x,u), \ldots, f_n(x,u)]^T$
+
+Le Hamiltonien devient :
+$$H(\mathbf{x}, u, \boldsymbol{\lambda}, t) = L(\mathbf{x}, u) + \boldsymbol{\lambda}^T \mathbf{f}(\mathbf{x}, u) = L(\mathbf{x}, u) + \sum_{i=1}^n \lambda_i f_i(\mathbf{x}, u)$$
+
+### 3.2 Conditions nécessaires d'optimalité
+
+#### Équations d'état (forward)
+$$\dot{x}(t) = \frac{\partial H}{\partial \lambda} = f(x, u)$$
+
+#### Équations adjointes (backward)
+$$\dot{\lambda}(t) = -\frac{\partial H}{\partial x}$$
+
+#### Condition d'optimalité sur la commande
+$$\frac{\partial H}{\partial u} = 0 \quad \text{ou} \quad u^*(t) = \arg\min_u H(x, u, \lambda, t)$$
+
+#### Conditions aux limites
+- **Initiales** : $x(0) = x_0$
+- **Finales** : $\lambda(T) = \frac{\partial \phi}{\partial x}\bigg|_{x=x(T)}$
+
+### 3.3 Interprétation du vecteur adjoint
+- $\lambda_i(t)$ représente la **valeur marginale** de l'état $x_i$ à l'instant $t$
+- Il indique l'impact d'une variation infinitésimale de $x_i(t)$ sur le coût total
+- C'est le "prix" associé à chaque composante de l'état
+
+### 3.4 Dérivation par intégration par parties
+
+#### Méthode de résolution alternative
+L'intégration par parties est une méthode fondamentale pour dériver les conditions d'optimalité en commande optimale. Elle permet de passer des variations d'état aux variations de commande.
+
+#### Principe de la variation
+Considérons une petite perturbation $\delta u(t)$ de la commande optimale. Cette perturbation induit une variation $\delta x(t)$ de l'état via :
+
+$$\delta \dot{x}(t) = \frac{\partial f}{\partial x}\delta x(t) + \frac{\partial f}{\partial u}\delta u(t)$$
+
+#### Application de l'intégration par parties
+La variation du coût s'écrit :
+$$\delta J = \int_0^T \left( \frac{\partial L}{\partial x}\delta x + \frac{\partial L}{\partial u}\delta u \right) dt + \frac{\partial \phi}{\partial x}\bigg|_{x=x(T)} \delta x(T)$$
+
+Pour éliminer les variations d'état $\delta x(t)$, on utilise l'intégration par parties :
+
+1. **Étape 1** : Introduire le multiplicateur $\lambda(t)$ :
+   $$\int_0^T \lambda(t) \left[ \delta \dot{x}(t) - \frac{\partial f}{\partial x}\delta x(t) - \frac{\partial f}{\partial u}\delta u(t) \right] dt = 0$$
+
+2. **Étape 2** : Intégrer par parties le terme $\lambda(t) \delta \dot{x}(t)$ :
+   $$\int_0^T \lambda(t) \delta \dot{x}(t) dt = \lambda(T)\delta x(T) - \lambda(0)\delta x(0) - \int_0^T \dot{\lambda}(t) \delta x(t) dt$$
+
+3. **Étape 3** : Regrouper les termes en $\delta x(t)$ :
+   $$\int_0^T \left[ \frac{\partial L}{\partial x} - \lambda \frac{\partial f}{\partial x} + \dot{\lambda} \right] \delta x(t) dt$$
+
+#### Conditions d'optimalité dérivées
+Pour que cette expression soit nulle pour toute variation admissible :
+
+1. **Équation adjointe** :
+   $$\dot{\lambda}(t) = -\frac{\partial L}{\partial x} + \lambda \frac{\partial f}{\partial x} = -\frac{\partial H}{\partial x}$$
+
+2. **Condition de transversalité** :
+   $$\lambda(T) = \frac{\partial \phi}{\partial x}\bigg|_{x=x(T)}$$
+
+3. **Condition d'optimalité sur la commande** :
+   $$\frac{\partial L}{\partial u} + \lambda \frac{\partial f}{\partial u} = \frac{\partial H}{\partial u} = 0$$
+
+#### Illustration : Cas du régulateur quadratique
+Pour le problème $J = \int_0^T (x^2 + u^2) dt$ avec $\dot{x} = u$ :
+
+1. **Hamiltonien** : $H = x^2 + u^2 + \lambda u$
+
+2. **Application de l'intégration par parties** :
+   - $\delta J = \int_0^T (2x \delta x + 2u \delta u) dt$
+   - Contrainte : $\delta \dot{x} = \delta u$
+   - Terme de couplage : $\int_0^T \lambda (\delta \dot{x} - \delta u) dt = 0$
+
+3. **Intégration par parties** :
+   $$\int_0^T \lambda \delta \dot{x} dt = \lambda(T)\delta x(T) - \int_0^T \dot{\lambda} \delta x dt$$
+
+4. **Regroupement** :
+   $$\delta J = \int_0^T [(2x + \dot{\lambda})\delta x + (2u - \lambda)\delta u] dt + \lambda(T)\delta x(T)$$
+
+5. **Conditions d'optimalité** :
+   - $\dot{\lambda} = -2x$ (coefficient de $\delta x = 0$)
+   - $2u - \lambda = 0 \Rightarrow u = \lambda/2$ (coefficient de $\delta u = 0$)
+   - $\lambda(T) = 0$ (condition de transversalité)
+
+#### Avantages de cette méthode
+- **Compréhension conceptuelle** : Montre comment les variations se propagent
+- **Généralisation** : S'étend facilement aux problèmes à contraintes multiples
+- **Conditions de transversalité** : Dérive naturellement les conditions aux limites
+- **Lien avec le calcul des variations** : Connecte à la théorie classique d'Euler-Lagrange
+
+---
+
+## 4. Exemples d'application
+
+### 4.1 Exemple simple : Régulateur quadratique
+
+#### Énoncé du problème
+Minimiser le coût :
 $$J = \int_0^T (x^2(t) + u^2(t)) \, dt$$
 
-Ici :
-- $x(t)$ est l’**état**
-- $u(t)$ est le **contrôle** (la commande)
-- La contrainte est **dynamique** : respecter l'équation $x' = u$
+sous la contrainte dynamique :
+$$\dot{x}(t) = u(t), \quad x(0) = x_0$$
 
-Note: On ajoute généralement une pénalité $\phi$ sur l'état final $x_T$:
+#### Application de la méthode
 
-$$J = \int_0^T (x^2(t) + u^2(t)) \, dt + \phi(x_T)$$
-
-* * *
-
-### Méthode de Pontryagin (ou Lagrange continue)
-
-On fait comme avant : on construit un **Lagrangien**, mais en version continue. On introduit une fonction $\lambda(t)$ appelée **multiplicateur de Lagrange**, ou **coût adjoint** :
-
-$$\mathcal{L}(x, u, \lambda) = x^2 + u^2 + \lambda ( \dot{x} - u )$$
-
-On va construire un objet plus utile : le **Hamiltonien**.
-
-$$H(x, u, \lambda) = x^2 + u^2 + \lambda \cdot f(x, u)$$
-
-Ici, $f(x, u) = u$, donc :
-
+**Étape 1 : Construction du Hamiltonien**
 $$H(x, u, \lambda) = x^2 + u^2 + \lambda u$$
 
-Ensuite, on applique les équations suivantes :
+**Étape 2 : Équations d'état et adjointes**
+- Équation d'état : $\dot{x} = \frac{\partial H}{\partial \lambda} = u$
+- Équation adjointe : $\dot{\lambda} = -\frac{\partial H}{\partial x} = -2x$
 
-1.  **Équation d’état :**
+**Étape 3 : Condition d'optimalité**
+$$\frac{\partial H}{\partial u} = 2u + \lambda = 0 \Rightarrow u^* = -\frac{\lambda}{2}$$
 
-    $$\dot{x} = \frac{\partial H}{\partial \lambda} = u$$
+**Étape 4 : Système final**
+$$\begin{cases}
+\dot{x} = -\frac{\lambda}{2} \\
+\dot{\lambda} = -2x \\
+x(0) = x_0 \\
+\lambda(T) = 0
+\end{cases}$$
 
-2.  **Équation du coût adjoint** (on remonte dans le temps) :
+### 4.2 Exemple avancé : Contrôle d'un oscillateur
 
-    $$\dot{\lambda} = -\frac{\partial H}{\partial x} = -2x$$
+#### Énoncé du problème
+Contrôler un système masse-ressort-amortisseur :
+$$\ddot{x} + 2\zeta\omega_n\dot{x} + \omega_n^2 x = u$$
 
-3.  **Condition d’optimalité** (optimisation) :
+en minimisant :
+$$J = \int_0^T (q x^2 + r \dot{x}^2 + u^2) \, dt$$
 
-    $$\frac{\partial H}{\partial u} = 2u + \lambda = 0 \Rightarrow u = -\frac{\lambda}{2}$$
+#### Formulation en espace d'état
+Poser $x_1 = x$ et $x_2 = \dot{x}$ :
+$$\begin{cases}
+\dot{x_1} = x_2 \\
+\dot{x_2} = -2\zeta\omega_n x_2 - \omega_n^2 x_1 + u
+\end{cases}$$
 
-#### Remarque: Pourquoi on remonte le temps ?
+#### Hamiltonien
+$$H = q x_1^2 + r x_2^2 + u^2 + \lambda_1 x_2 + \lambda_2(-2\zeta\omega_n x_2 - \omega_n^2 x_1 + u)$$
 
-Parce que la condition sur $\lambda$ est donnée **à la fin** (ex : $\lambda(T) = 0$) !   On connaît $x(0) = 1$, mais pas $\lambda(0)$. C’est ce qu’on appelle un **problème à deux points** :
+#### Conditions d'optimalité
+- $\frac{\partial H}{\partial u} = 2u + \lambda_2 = 0 \Rightarrow u^* = -\frac{\lambda_2}{2}$
+- $\dot{\lambda_1} = -2q x_1 + \omega_n^2 \lambda_2$
+- $\dot{\lambda_2} = -2r x_2 - \lambda_1 + 2\zeta\omega_n \lambda_2$
 
-*   $x$ part de $t=0$
+---
 
-*   $\lambda$ part de $t=T$
+## 5. Implémentation numérique
 
-On doit "tirer" dans le bon sens pour que ça colle à la fin.
+### 5.1 Défis numériques
 
-#### Remarque: $\lambda$ **produit scalaire** ou **multiplication** ?
+#### Problème à deux points
+- Les conditions initiales sont données en $t = 0$ pour $x(t)$
+- Les conditions finales sont données en $t = T$ pour $\lambda(t)$
+- Nécessite des méthodes de **shooting** ou de **collocation**
 
-La notation:
+#### Méthodes de résolution
 
-$$\lambda(t) \cdot f(x(t), u(t))$$
+**Méthode du shooting simple**
+1. Deviner $\lambda(0)$
+2. Intégrer le système forward
+3. Vérifier si $\lambda(T) = 0$
+4. Ajuster $\lambda(0)$ jusqu'à convergence
 
-- En dimension 1: est une **multiplication classique de scalaires**. Par exemple: $\lambda(t) \cdot (\dot{x}(t) - u(t))$ ce qu’on fait ici, c’est ajouter au coût une "pénalité" si $\dot{x} \ne u$, via ce produit.
+**Méthode d'Euler backward-forward**
+```cpp
+// Pseudo-algorithme
+for (int iter = 0; iter < max_iter; ++iter) {
+    // Forward integration for x
+    for (int i = 0; i < N; ++i) {
+        u[i] = -lambda[i] / 2;
+        x[i+1] = x[i] + dt * u[i];
+    }
+    
+    // Backward integration for lambda
+    lambda[N] = 0.0;  // Condition finale
+    for (int i = N-1; i >= 0; --i) {
+        lambda[i] = lambda[i+1] + dt * (-2 * x[i+1]);
+    }
+    
+    // Check convergence
+    if (convergence_test()) break;
+}
+```
 
-- En dimension plus grande (ex : plusieurs états et contrôles): Si on avait un vecteur $x \in \mathbb{R}^n$, alors $\lambda$ serait aussi un vecteur et :
-
-$$\lambda(t) \cdot f(x(t), u(t)) = \text{produit scalaire} = \sum_{i=1}^n \lambda_i(t) f_i(x(t), u(t))$$
-
-* * *
-
-### Résolution complète
-
-On a donc ce système :
-
-$$\dot{x} = u = -\frac{\lambda}{2}$$
-
-$$\dot{\lambda} = -2x$$
-
-Et on sait que $x(0) = 1$, on peut aussi imposer $\lambda(T) = 0$ comme condition terminale (typique en commande optimale).
-
-On peut résoudre ce système numériquement (méthode de Runge-Kutta, Euler, etc.).
+### 5.2 Exemple d'implémentation : Régulateur quadratique
 
 ```cpp
 #include <iostream>
 #include <vector>
 #include <cmath>
 
-// Résolution avec Euler, pas super précis, mais ça illustre l'idée.
-int main()
-{
-    const double T = 5.0;
-    const int N = 1000;
-    const double dt = T / N;
-
-    std::vector<double> x(N + 1, 0.0);
-    std::vector<double> lambda(N + 1, 0.0);
-    std::vector<double> u(N + 1, 0.0);
-
-    // Condition initiale x(0) = 1
-    x[0] = 1.0;
-
-    // Condition finale lambda(T) = 0
-    lambda[N] = 0.0;
-
-    // Backward Euler for lambda (remonter le temps)
-    for (int i = N - 1; i >= 0; --i)
-    {
-        lambda[i] = lambda[i + 1] + dt * 2 * x[i + 1];  // \dot{\lambda} = -2x
+class OptimalControlSolver {
+private:
+    const double T;           // Horizon temporel
+    const int N;              // Nombre de points
+    const double dt;          // Pas de temps
+    const double x0;          // Condition initiale
+    
+    std::vector<double> x, lambda, u;
+    
+public:
+    OptimalControlSolver(double T_val, int N_val, double x0_val) 
+        : T(T_val), N(N_val), dt(T/N), x0(x0_val), 
+          x(N+1), lambda(N+1), u(N+1) {}
+    
+    void solve() {
+        // Initialisation
+        x[0] = x0;
+        lambda[N] = 0.0;  // Condition terminale
+        
+        // Itérations pour résoudre le problème à deux points
+        for (int iter = 0; iter < 100; ++iter) {
+            // Intégration forward pour x
+            for (int i = 0; i < N; ++i) {
+                u[i] = -lambda[i] / 2.0;
+                x[i+1] = x[i] + dt * u[i];
+            }
+            
+            // Intégration backward pour lambda  
+            for (int i = N-1; i >= 0; --i) {
+                lambda[i] = lambda[i+1] + dt * 2.0 * x[i+1];
+            }
+        }
     }
-
-    // Forward Euler for x (avancer dans le temps)
-    for (int i = 0; i < N; ++i)
-    {
-        u[i] = -lambda[i] / 2;              // optimalité : u = -lambda/2
-        x[i + 1] = x[i] + dt * u[i];        // \dot{x} = u
+    
+    void printResults() const {
+        std::cout << "Résultats de la commande optimale:\n";
+        std::cout << "t\t\tx(t)\t\tu(t)\t\tlambda(t)\n";
+        for (int i = 0; i <= N; i += N/10) {
+            printf("%.2f\t\t%.4f\t\t%.4f\t\t%.4f\n", 
+                   i*dt, x[i], u[i], lambda[i]);
+        }
     }
-
-    // Affichage de quelques valeurs
-    for (int i = 0; i <= N; i += N / 10)
-    {
-        std::cout << "t=" << i * dt
-                  << ", x=" << x[i]
-                  << ", u=" << u[i]
-                  << ", lambda=" << lambda[i]
-                  << std::endl;
+    
+    double computeCost() const {
+        double cost = 0.0;
+        for (int i = 0; i < N; ++i) {
+            cost += dt * (x[i]*x[i] + u[i]*u[i]);
+        }
+        return cost;
     }
+};
 
+int main() {
+    OptimalControlSolver solver(5.0, 1000, 1.0);
+    solver.solve();
+    solver.printResults();
+    
+    std::cout << "\nCoût total: " << solver.computeCost() << std::endl;
+    
     return 0;
 }
 ```
 
-### 🧠 Commentaires :
+---
 
-*   `lambda[i] = lambda[i+1] + dt * 2 * x[i+1]` : c’est l’équation $\dot{\lambda} = -2x$
+## 6. Résumé et perspectives
 
-*   `u = -lambda/2` : c’est la condition d’optimalité
+### 6.1 Points clés à retenir
 
-*   `x[i+1] = x[i] + dt * u[i]` : c’est l’évolution de l’état
+| Concept | Rôle | Interprétation |
+|---------|------|----------------|
+| **Hamiltonien** | Fonction centrale combinant coût et dynamique | Généralise le Lagrangien |
+| **Vecteur adjoint** | Prix marginal des états | Importance économique de chaque état |
+| **Principe du maximum** | Conditions d'optimalité | Généralise les conditions de Lagrange |
+| **Problème à deux points** | Défi numérique principal | Conditions aux deux extrémités temporelles |
 
+### 6.2 Extensions possibles
+- **Commande optimale stochastique** (équations de Hamilton-Jacobi-Bellman)
+- **Commande robuste** (incertitudes paramétriques)
+- **Commande optimale à horizon infini** (régulateurs LQR)
+- **Contraintes d'inégalité** (commande bang-bang)
 
-* * *
-
-
-🧩 8. Résumé
-------------
-
-| Concept | Rôle |
-| --- | --- |
-| Contrainte | Ce qu'on doit respecter (ici : $x'=u$) |
-| Méthode de Lagrange | Ajoute un multiplicateur pour gérer les contraintes |
-| Hamiltonien | Fonction pour combiner état, contrôle et adjoint |
-| Gradient / dérivées | Trouver les minima (ou maxima) en résolvant des équations |
-| Conditions initiales | Ce qu’on connaît au début (ex : x(0) = 1) |
-| Conditions finales | Ce qu’on connaît à la fin (ex : $\lambda(T) = 0$) |
-| Remonter le temps | Nécessaire car la contrainte sur $\lambda$ est fixée à la fin |
+### 6.3 Applications industrielles
+- **Aérospatiale** : trajectoires optimales de satellites
+- **Robotique** : planification de mouvements
+- **Économie** : théorie de la croissance optimale
+- **Ingénierie** : régulation de procédés industriels
