@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <iostream>
 #include <map>
+#include <memory>
 
 namespace serialization
 {
@@ -98,6 +99,48 @@ public:
         for (const auto& pair : p_map)
         {
             p_serializer << pair.first << pair.second;
+        }
+        return p_serializer;
+    }
+
+    // ------------------------------------------------------------------------
+    //! \brief Serialize: Store std::unique_ptr inside the container.
+    //! \param p_serializer The serializer object.
+    //! \param p_unique_ptr The unique_ptr to be stored.
+    //! \return The serializer object.
+    // ------------------------------------------------------------------------
+    template <typename T>
+    friend Serializer& operator<<(Serializer& p_serializer, std::unique_ptr<T> const& p_unique_ptr)
+    {
+        // First serialize whether the pointer is null
+        bool is_null = (p_unique_ptr == nullptr);
+        p_serializer << is_null;
+
+        // If not null, serialize the pointed object
+        if (!is_null)
+        {
+            p_serializer << *p_unique_ptr;
+        }
+        return p_serializer;
+    }
+
+    // ------------------------------------------------------------------------
+    //! \brief Serialize: Store std::shared_ptr inside the container.
+    //! \param p_serializer The serializer object.
+    //! \param p_shared_ptr The shared_ptr to be stored.
+    //! \return The serializer object.
+    // ------------------------------------------------------------------------
+    template <typename T>
+    friend Serializer& operator<<(Serializer& p_serializer, std::shared_ptr<T> const& p_shared_ptr)
+    {
+        // First serialize whether the pointer is null
+        bool is_null = (p_shared_ptr == nullptr);
+        p_serializer << is_null;
+
+        // If not null, serialize the pointed object
+        if (!is_null)
+        {
+            p_serializer << *p_shared_ptr;
         }
         return p_serializer;
     }
@@ -221,6 +264,60 @@ public:
             ValueType value;
             p_deserializer >> key >> value;
             p_map[key] = value;
+        }
+        return p_deserializer;
+    }
+
+    // ------------------------------------------------------------------------
+    //! \brief Deserialize: Read std::unique_ptr from the container.
+    //! \param p_deserializer The deserializer object.
+    //! \param p_unique_ptr The unique_ptr to be read.
+    //! \return The deserializer object.
+    // ------------------------------------------------------------------------
+    template <typename T>
+    friend Deserializer& operator>>(Deserializer& p_deserializer, std::unique_ptr<T>& p_unique_ptr)
+    {
+        // First deserialize whether the pointer is null
+        bool is_null;
+        p_deserializer >> is_null;
+
+        // If null, reset the unique_ptr
+        if (is_null)
+        {
+            p_unique_ptr.reset();
+        }
+        else
+        {
+            // Create a new object and deserialize into it
+            p_unique_ptr.reset(new T());
+            p_deserializer >> *p_unique_ptr;
+        }
+        return p_deserializer;
+    }
+
+    // ------------------------------------------------------------------------
+    //! \brief Deserialize: Read std::shared_ptr from the container.
+    //! \param p_deserializer The deserializer object.
+    //! \param p_shared_ptr The shared_ptr to be read.
+    //! \return The deserializer object.
+    // ------------------------------------------------------------------------
+    template <typename T>
+    friend Deserializer& operator>>(Deserializer& p_deserializer, std::shared_ptr<T>& p_shared_ptr)
+    {
+        // First deserialize whether the pointer is null
+        bool is_null;
+        p_deserializer >> is_null;
+
+        // If null, reset the shared_ptr
+        if (is_null)
+        {
+            p_shared_ptr.reset();
+        }
+        else
+        {
+            // Create a new object and deserialize into it
+            p_shared_ptr.reset(new T());
+            p_deserializer >> *p_shared_ptr;
         }
         return p_deserializer;
     }

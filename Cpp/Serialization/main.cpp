@@ -281,7 +281,194 @@ inline bool example_map_serialization()
 }
 
 // ============================================================================
+//! \brief Example 4: Serialization of smart pointers
+// ============================================================================
+inline bool example_smart_pointers()
+{
+    std::cout << "\n=== Serialization smart pointers example ===" << std::endl;
+
+    // Create smart pointers with different scenarios
+    std::unique_ptr<Person> unique_person(new Person("Marie Curie", 45, {"science", "recherche"}));
+    std::unique_ptr<Person> unique_null = nullptr;
+
+    std::shared_ptr<Person> shared_person1(new Person("Albert Einstein", 50, {"physique", "musique"}));
+    std::shared_ptr<Person> shared_person2 = shared_person1; // Shared ownership
+    std::shared_ptr<Person> shared_null = nullptr;
+
+    // Create smart pointers to vectors
+    std::unique_ptr<std::vector<int>> unique_vector(new std::vector<int>{1, 2, 3, 4, 5});
+
+    std::shared_ptr<std::map<std::string, int>> shared_map(new std::map<std::string, int>{{"A", 1}, {"B", 2}, {"C", 3}});
+
+    std::cout << "Original unique_ptr person:" << std::endl;
+    if (unique_person)
+    {
+        unique_person->print();
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nOriginal unique_ptr null:" << std::endl;
+    if (unique_null)
+    {
+        unique_null->print();
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nOriginal shared_ptr person:" << std::endl;
+    if (shared_person1)
+    {
+        shared_person1->print();
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nOriginal unique_ptr vector:" << std::endl;
+    if (unique_vector)
+    {
+        std::cout << "  Vector: ";
+        for (size_t i = 0; i < unique_vector->size(); ++i)
+        {
+            std::cout << (*unique_vector)[i];
+            if (i < unique_vector->size() - 1) std::cout << ", ";
+        }
+        std::cout << std::endl;
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nOriginal shared_ptr map:" << std::endl;
+    if (shared_map)
+    {
+        for (const auto& pair : *shared_map)
+        {
+            std::cout << "  " << pair.first << ": " << pair.second << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    // Serialize all smart pointers
+    Serializer serializer;
+    serializer << unique_person << unique_null << shared_person1 << shared_null << unique_vector << shared_map;
+
+    std::cout << "\nSerialized smart pointers size: " << serializer.data().size() << " bytes" << std::endl;
+    std::cout << std::endl;
+
+    // Deserialize all smart pointers
+    serialization::Container data = serializer.data();
+    Deserializer deserializer(data);
+
+    std::unique_ptr<Person> deserialized_unique_person;
+    std::unique_ptr<Person> deserialized_unique_null;
+    std::shared_ptr<Person> deserialized_shared_person1;
+    std::shared_ptr<Person> deserialized_shared_null;
+    std::unique_ptr<std::vector<int>> deserialized_unique_vector;
+    std::shared_ptr<std::map<std::string, int>> deserialized_shared_map;
+
+    deserializer >> deserialized_unique_person >> deserialized_unique_null
+                >> deserialized_shared_person1 >> deserialized_shared_null
+                >> deserialized_unique_vector >> deserialized_shared_map;
+
+    std::cout << "Deserialized unique_ptr person:" << std::endl;
+    if (deserialized_unique_person)
+    {
+        deserialized_unique_person->print();
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nDeserialized unique_ptr null:" << std::endl;
+    if (deserialized_unique_null)
+    {
+        deserialized_unique_null->print();
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nDeserialized shared_ptr person:" << std::endl;
+    if (deserialized_shared_person1)
+    {
+        deserialized_shared_person1->print();
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nDeserialized unique_ptr vector:" << std::endl;
+    if (deserialized_unique_vector)
+    {
+        std::cout << "  Vector: ";
+        for (size_t i = 0; i < deserialized_unique_vector->size(); ++i)
+        {
+            std::cout << (*deserialized_unique_vector)[i];
+            if (i < deserialized_unique_vector->size() - 1) std::cout << ", ";
+        }
+        std::cout << std::endl;
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    std::cout << "\nDeserialized shared_ptr map:" << std::endl;
+    if (deserialized_shared_map)
+    {
+        for (const auto& pair : *deserialized_shared_map)
+        {
+            std::cout << "  " << pair.first << ": " << pair.second << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "  (null)" << std::endl;
+    }
+
+    // Verify data integrity
+    bool unique_person_same = (unique_person && deserialized_unique_person &&
+                              unique_person->name() == deserialized_unique_person->name() &&
+                              unique_person->age() == deserialized_unique_person->age() &&
+                              unique_person->hobbies() == deserialized_unique_person->hobbies());
+    bool unique_null_same = (!unique_null && !deserialized_unique_null);
+    bool shared_person_same = (shared_person1 && deserialized_shared_person1 &&
+                              shared_person1->name() == deserialized_shared_person1->name() &&
+                              shared_person1->age() == deserialized_shared_person1->age() &&
+                              shared_person1->hobbies() == deserialized_shared_person1->hobbies());
+    bool shared_null_same = (!shared_null && !deserialized_shared_null);
+    bool vector_same = (unique_vector && deserialized_unique_vector && *unique_vector == *deserialized_unique_vector);
+    bool map_same = (shared_map && deserialized_shared_map && *shared_map == *deserialized_shared_map);
+
+    std::cout << "\nSmart pointers data integrity check:" << std::endl;
+    std::cout << "  Unique_ptr person: " << (unique_person_same ? "PASSED" : "FAILED") << std::endl;
+    std::cout << "  Unique_ptr null: " << (unique_null_same ? "PASSED" : "FAILED") << std::endl;
+    std::cout << "  Shared_ptr person: " << (shared_person_same ? "PASSED" : "FAILED") << std::endl;
+    std::cout << "  Shared_ptr null: " << (shared_null_same ? "PASSED" : "FAILED") << std::endl;
+    std::cout << "  Unique_ptr vector: " << (vector_same ? "PASSED" : "FAILED") << std::endl;
+    std::cout << "  Shared_ptr map: " << (map_same ? "PASSED" : "FAILED") << std::endl;
+
+    return unique_person_same && unique_null_same && shared_person_same &&
+           shared_null_same && vector_same && map_same;
+}
+
+// ============================================================================
 //! \brief Main function
+//! g++ -std=c++17 -Wall -Wextra -O2 -o main main.cpp
 // ============================================================================
 int main()
 {
@@ -294,6 +481,10 @@ int main()
         return EXIT_FAILURE;
     }
     if (!example_map_serialization())
+    {
+        return EXIT_FAILURE;
+    }
+    if (!example_smart_pointers())
     {
         return EXIT_FAILURE;
     }
