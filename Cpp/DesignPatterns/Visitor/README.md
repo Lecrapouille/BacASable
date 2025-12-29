@@ -1,12 +1,12 @@
-# Fesign Pattern Visitor
+# Design Pattern Visitor
 
 ## 00_BasicVisitor
 
-Initial basic vistor implementation.
+Initial basic visitor implementation.
 
 ## 01_FallbackVisitor
 
 Based on 00_BasicVisitor with fallback management: behavior when unexpected elements are
-detected when the visitot is traversing the container of vistable elements.
+detected when the visitor is traversing the container of visitable elements.
 
 Methods `visit` have been replaced by `operator()`.

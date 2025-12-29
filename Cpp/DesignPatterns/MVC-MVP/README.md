@@ -1,23 +1,23 @@
 ## MVC-MVP
 
-Learning how to implement design pattern Model-View-Controller (MVC) and a
-Model-View-Presenter (MVP) in C++.  This pattern is used for decoupling classes
-in Graphical User Interface (GUI) like GTK+ or QT. Model is class managing your
-data.  View is the class managing buttons and widgets of the Human-Machine
-Interface (HMI). Controller and Presenter are mediator class between Model and
+Learning how to implement the Model-View-Controller (MVC) and
+Model-View-Presenter (MVP) design patterns in C++. These patterns are used for decoupling classes
+in Graphical User Interfaces (GUI) like GTK+ or Qt. Model is the class managing your
+data. View is the class managing buttons and widgets of the Human-Machine
+Interface (HMI). Controller and Presenter are mediator classes between Model and
 View.
 
-By "more decoupling" that means the library managing the view can be replaced by
-another and therefore Controller/Presenter and Model are View agnostic. More
+By "more decoupling" we mean that the library managing the view can be replaced by
+another, and therefore Controller/Presenter and Model are View agnostic. More
 decoupling means more testable with unit tests.
 
-There are many documents on internet explaining these two patterns but I did not
-found C++ ultra basic implementation for MVC and particularly for MVP on GitHub
-(MVP is a purely Android pattern) so I'm not 100% sure if the code I made is the
-correct one, so take care ! The difficulty with these patterns is to break the
+There are many documents on the internet explaining these two patterns, but I did not
+find C++ ultra-basic implementations for MVC and particularly for MVP on GitHub
+(MVP is a purely Android pattern), so I'm not 100% sure if the code I made is
+correct, so take care! The difficulty with these patterns is to break the
 cyclic class relation (A knows B and B knows A). In these examples, I just made
-the simplest model possible: a Student class with its a single member variable :
-its name. The View is emulated by your console so no additional libraries are
+the simplest model possible: a Student class with a single member variable:
+its name. The View is emulated by your console, so no additional libraries are
 needed for compiling these examples. A simple `g++ -W -Wall -Wextra --std=c++11
 *.cpp -o prog` is enough.
 
@@ -97,17 +97,17 @@ Code source:
   need of allocation.
 
 * 02_MVP: 2nd modified version of Model-View-Presenter: I added observers. This
-  version is not good because it's the Presenter job to modify the model and
-  tells the View to refresh the display of the model. In this example the Model
-  only notifies the Presenter but we can "violate" the design by making the View
-  to inherit from.
+  version is not good because it's the Presenter's job to modify the model and
+  tell the View to refresh the display of the model. In this example the Model
+  only notifies the Presenter, but we can "violate" the design by making the View
+  inherit from Observer.
 
 * 03_MVC: Model-View-Controller based on http://www.laputan.org/pub/papers/POSA-MVC.pdf
 
 * 04_MVP-gtk: a GTK+ implementation of the MVP using contracts and multiple
   views on the same Model. I'm not sure if my design is correct where Model is
-  an Observable in the aim to prevent all Presents that it's data changed. But
-  this how pygtkmvc is implemented.
+  an Observable in order to notify all Presenters that its data changed. But
+  this is how pygtkmvc is implemented.
 
 * 05_MVP-gtk: Try to add a Proxy class to encapsulate the Student with an
   Observable flavor.

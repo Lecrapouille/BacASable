@@ -1,25 +1,27 @@
-# Godot
+# Game Engine Examples
 
-Learning Godot game engine https://godotengine.org/ and gdscript.
+Learning how to program in Godot, Unity, and SFML game engines.
 
-Godot: https://godotengine.org/
+## Godot
 
-## Camera
+Learning Godot game engine https://godotengine.org/ and GDScript.
 
-Oribtal Camera. This code is a portage to Godot code from the Unity3D code made by the
-Youtube channel Game Dev Guide "Building a Camera Controller for a Strategy Game"
+### Camera
+
+Orbital Camera. This code is a port to Godot from the Unity3D code made by the
+YouTube channel Game Dev Guide "Building a Camera Controller for a Strategy Game"
 https://youtu.be/rnqF6S7PfFA
 
-# Unity
+## Unity
 
 Learning Unity game engine.
 
-## Transform
+### Transform
 
-Experiment local position vs. world position
+Experiment with local position vs. world position transformations.
 
-# SFML
+## SFML
 
-## Roads junctions
+### Roads Junctions
 
-Learn how to make union of roads (spliting segments ...).
+Learn how to make unions of roads (splitting segments, detecting intersections, etc.).

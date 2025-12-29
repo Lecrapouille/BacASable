@@ -1,56 +1,57 @@
 # BacASable
 
-Sharing my POC/micro projects that I made for learning some techniques that can be used
-for my biggest projects. This is kind of GitHub GISTs but grouped in a single repo (sandbox
-means bac à sable in French).
+Sharing my proof of concepts that I made for learning some techniques that can be used
+in my bigger projects. This is kind of GitHub GISTs but grouped in a single repository (sandbox
+means "bac à sable" in French).
 
-Mainly C++ code but also Julia, Forth, Prolog, Scilab, GTK+ and C code ... some related to C++.
+Mainly C++ code but also Julia, Forth, Prolog, Scilab, GTK+ and C code, some related to C++.
 
 ## Bash
 
-Quick bash scripts:
-- backing up my GitHub projects.
+Quick bash scripts for automation:
+- **backup-github.sh**: Script for backing up my GitHub projects to a specified directory.
 
-## ChatGPT
+## Ansible
 
-Test generating C++ code from ChatGPT.
+Automation examples using Ansible:
+- **Hello World**: Basic Ansible playbook demonstrating directory creation, file copying, and script execution.
 
 ## C code
 
 ### AutoLoadLib
 
-Interactive Programming in C: edit your C code at run-time, see your changes on
-your application without restarting it. This allows to mimic the C language as
+Interactive Programming in C: edit your C code at runtime, see your changes in
+your application without restarting it. This allows mimicking the C language as
 an interpreted language.
 
 ## C++
 
 ### Forth Wrapper
 
-Prove of concept implementing an ultra-basic Forth interpreter wrapping C++ API.
-Two examples are given:
-- Wrapping a thin C++ abstraction library integrating the physic engine Bullet and
+Proof of concept implementing an ultra-basic Forth interpreter wrapping C++ APIs.
+Two examples are provided:
+- **CppPhysicsEngine**: Wrapping a thin C++ abstraction library integrating the physics engine Bullet and
 the 3D library OpenSceneGraph.
-- Wrapping a C++ symbolic library Ginac.
+- **CppSymbolicEngine**: Wrapping a C++ symbolic library (Ginac) for symbolic mathematics.
 
-### Design Pattern
+### Design Patterns
 
-Visitor, Observer, MVP, Component ...
+Implementation of various design patterns: Visitor, Observer, MVP, Component, Command, etc.
 
 #### Visitor
 
-Iterate on a collection of class instances that have different API and call the
-correct methods. Ideal for Game graph scene.
+Iterate over a collection of class instances with different APIs and call the
+correct methods. Ideal for game scene graphs.
 
 #### Component
 
-Composition is better than inheritance. Similar to Strategy pattern but Component is
-used for completing the state of the instance instead of adding dynamically behavior.
+Composition is better than inheritance. Similar to the Strategy pattern, but Component is
+used for completing the state of the instance instead of adding dynamic behavior.
 
 #### Observer
 
-Safe observer managing the case where the Observer can be destroyed before the
-Observable.
+Safe observer pattern managing the case where the Observer can be destroyed before the
+Observable. Includes examples using libsigc++.
 
 Note: Personally I would use [libsigc++](https://developer.gnome.org/libsigc++-tutorial/stable/index.html)
 instead of implementing my own Observer/Listener class. This lib allows you to
@@ -58,116 +59,185 @@ add signals/slots (similarly to Qt). I give an example of this lib.
 
 #### MVC-MVP
 
-Learning how to implement design pattern Model-View-Controller (MVC) and a
-Model-View-Presenter (MVP) in C++ first with console then with gtk+.
-I tried to write minimalist examples.
+Learning how to implement the Model-View-Controller (MVC) and
+Model-View-Presenter (MVP) design patterns in C++, first with console applications then with GTK+.
+Minimalist examples are provided.
 
 ### Unit Tests
 
-Getting fun to mock C functions such as open(), read() to unit tests C function calling them.
-We exploit the behavior of weak symbols by creating mock functions and define C++ mock class
-to use them easily with Google test/mock. See the README in this folder for more details.
+Having fun mocking C functions such as open(), read() to unit test C functions calling them.
+We exploit the behavior of weak symbols by creating mock functions and defining C++ mock classes
+to use them easily with Google Test/Mock. See the README in this folder for more details.
 
 ### Symbolic Manipulation
 
-Basic symbolic manipulation in C++.
+Basic symbolic manipulation in C++ using libraries like GINaC and SymEngine for computer algebra operations.
 
 ### Runtime Polymorphism
 
-Based on the YT vide "Better Code: Runtime Polymorphism" by Sean Parent.
+Based on the YouTube video "Better Code: Runtime Polymorphism" by Sean Parent.
 https://sean-parent.stlab.cc/papers-and-presentations/#better-code-runtime-polymorphism
+
+Examples demonstrating type-erased polymorphism using std::function and smart pointers.
 
 ### ConditionVariable
 
-Test a basic wrapper for notifications through condition variables.
+Testing a basic wrapper for notifications through condition variables in multi-threaded applications.
 
 ### Union
 
-Test union structure for a Forth project https://github.com/Lecrapouille/SimForth. I dislike the idea of manipulating two separeted stacks: integer and float. Use a single one and make the operator change the type in the same way than OCaml operators `+` and `+.`, `int_of_float`.
+Testing union structures for a Forth project https://github.com/Lecrapouille/SimForth. Instead of manipulating two separate stacks (integer and float), use a single one and make operators change the type similar to OCaml operators `+` and `+.`, `int_of_float`.
 
 ### C# Properties
 
-Mimic C# properties in C++.
+Mimicking C# properties in C++ using getter/setter patterns.
 
 ### Containers
 
-Prototype structure such as grph, scene graph ...
+Prototype data structures such as graphs and scene graphs for game development.
 
 ### Policies
 
-C++ policy template for iterating over folders and extract desired files.
+C++ policy templates for iterating over folders and extracting desired files using template metaprogramming.
 
 ## Game Engine
 
-Learning by myself how to program in Godot and Unity:
-- Point of view code implementation.
-- Local vs world transformaation.
+Learning how to program in Godot, Unity, and SFML:
+- **Godot**: Orbital camera controller implementation, ported from Unity.
+- **Unity**: Transform experiments with local vs world position/rotation.
+- **SFML**: Road junction algorithms for SimCity-like games, including segment intersection and border detection.
 
 ## Gedit
 
 ### Syntax highlighting
 
 Some *.lang files for my personal projects inspired by https://artisan.karma-lab.net/faire-todo-lists-gedit
-- logs: for highlighting log files generated by my personal projects (SimTaDyn ...)
-- forth: (TODO) for highlighting my SimForth script (a personal Forth slightly modified)
+- **logs**: For highlighting log files generated by my personal projects (SimTaDyn, etc.)
+- **forth**: (TODO) For highlighting my SimForth scripts (a personal Forth slightly modified)
 
 ## GTK+
 
 ### GTK+2 with GTK-server
 
-Bash script to launch GTK+2 application and GTK-server https://www.gtk-server.org/. Initial step before making the portage for Forth application.
+Bash scripts to launch GTK+2 applications with GTK-server https://www.gtk-server.org/. Initial step before porting to Forth applications. Examples include drawing areas and image display using FIFO and TCP communication.
 
 ### Design Patterns
 
-My personal implementation of some design patterns because all examples I found
-on internet do not respond to concrete cases. For example:
-- Model-View-Presenter is pure Android design pattern and I could not find one
-  nice and simple implementation in C++, GTKmm.
-- Observer nobody in blogs seems to care about the case where the Observer is
-  destroyed before the Observable.
-- Component pattern for decoupling patterns.
-- Visitor pattern.
+Model-View-Presenter (MVP) implementation in GTKmm (C++ wrapper for GTK+). See the Cpp/DesignPatterns/MVC-MVP folder for more details.
 
 ## Julia
 
 ### Call C/C++ code
 
-See how from Julia we can call C functions.
+Examples showing how to call C functions from Julia, including structure passing and array manipulation.
+
+### JuliaCpp
+
+Integration examples for calling C++ code from Julia.
 
 ### Max-Plus algebra
 
+Max-Plus algebra implementation in Julia. See the MaxPlus section for more details.
+
+### Standalone
+
+Learning how to create standalone Julia applications that can be distributed as executables.
+
 ## Max-Plus
 
-Defining a Max-Plus class in C++ and Julia for Max-Plus algebra.
-More information about this algebra, see https://en.wikipedia.org/wiki/Max-plus_algebra
-My portage to Julia of the Max-Plus Scilab toolbox: https://github.com/Lecrapouille/MaxPlus.jl
+Defining Max-Plus classes in C++ and Julia for Max-Plus algebra operations.
+More information about this algebra: https://en.wikipedia.org/wiki/Max-plus_algebra
+My port to Julia of the Max-Plus Scilab toolbox: https://github.com/Lecrapouille/MaxPlus.jl
 
 ## MyMakefile
 
-Template for my Makefile helper.
+Template Makefile helper with common build targets and utilities for C/C++ projects.
 
 ## OpenCV in C++
 
-Testing some basic functions, camera settings, car counting, ...
+Testing various OpenCV functionalities:
+- **BasicFunctions**: Basic OpenCV operations and image processing
+- **CameraSettings**: Camera intrinsic and extrinsic calibration
+- **CarCounting**: Vehicle counting using background subtraction
+- **Franchissement**: Highway lane detection and crossing detection
+- **OrientedROI**: Region of Interest extraction from oriented rectangles
+- **ParkingLots**: Parking lot detection algorithms
 
 ## Prolog
 
-Learning programming Prolog. Learning how to call Prolog from C++ code. Implementing ultra basic Prolog routines based
-on graph theory that could be used inside my personal project SimTaDyn instead of heavy C++ class and code.
+Learning Prolog programming and how to call Prolog from C++ code. Implementing basic Prolog routines based
+on graph theory that could be used in my personal project SimTaDyn instead of heavy C++ classes and code.
+Includes examples for path finding, cycle detection, and reachability analysis.
 
 ## Law Control
 
+Control theory and automation examples:
+
 ### ScicosLab / NSP (Scilab) blocks
 
-Some "As it" very old and unmaintained C code for ScicosLab: joystick, camera, UART.
+Some "as-is" very old and unmaintained C code for ScicosLab: joystick, camera, UART.
 http://www.scicoslab.org/
 
 ### Plant Growth
 
-A student project for generating 3D plants made long yeeeears ago [NSP](https://cermics.enpc.fr/~jpc/nsp-tiddly/mine.html) or [ScicosLab](http://www.scicoslab.org/). Note: ScicosLab is the fork of Scilab (the equivalent of Matlab) and NSP is now replaced by NSP. This is not a serious application. If you are interested by simulation of plant growth read :
+A student project for generating 3D plants made many years ago using [NSP](https://cermics.enpc.fr/~jpc/nsp-tiddly/mine.html) or [ScicosLab](http://www.scicoslab.org/). Note: ScicosLab is a fork of Scilab (the equivalent of Matlab) and NSP has been replaced. This is not a serious application. If you are interested in simulation of plant growth, read:
 * (fr) http://www.linneenne-lyon.org/depot1/14367.pdf
 * (en) https://hal.inria.fr/file/index/docid/71706/filename/RR-4877.pdf
 
 ### Auto Parking
 
-Quick demo made while studying state of arts for auto parking.
+Quick demo made while studying state-of-the-art algorithms for automatic parallel parking based on research papers.
+
+### Filter
+
+Filtering algorithms:
+- **Kalman1D**: One-dimensional Kalman filter implementation
+- **PolyFit**: Bufferless polynomial fitting using systolic arrays
+
+### OptimalCommand
+
+Optimal control theory examples and implementations, including theoretical foundations and numerical methods.
+
+### SI (International System of Units)
+
+Testing libraries for handling physical units in C++:
+- https://github.com/bernedom/SI
+- https://github.com/nholthaus/units
+
+Applied to car kinematic models using tricycle kinematic equations.
+
+## Python
+
+### FastAPI
+
+FastAPI web framework examples for building REST APIs:
+- **01_helloworld**: Basic FastAPI hello world example
+- **02_simple_pokemons**: Simple Pokemon database without persistence
+- **03_sql_pokemons**: Pokemon database with SQLAlchemy and SQLite
+- **04_sql_html_pokemons**: Full web interface with HTML templates for Pokemon management
+
+### ThreadExecutor
+
+Examples of thread pool executors for concurrent task execution.
+
+### pyForth
+
+Python implementation of a Forth interpreter core.
+
+## Qt
+
+Qt6 application examples:
+- **Dock**: Dock widget examples and layouts
+- **GraphViewer**: Proof of concept for a graph visualization tool in Qt6
+- **PetriEditor**: Proof of concept for a Petri Net viewer/editor in Qt6
+- **MVVM**: Model-View-ViewModel pattern implementation
+
+## RobotFramework
+
+Robot Framework test automation examples for web interaction testing, including Google search automation.
+
+## Slides
+
+### reveal.js
+
+Examples and setup for creating presentations using reveal.js, including PDF export configuration.

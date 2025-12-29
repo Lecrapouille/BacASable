@@ -1,10 +1,16 @@
 # Pokédex
 
-Simple database of Pokemons using FastAPI, SQLAlchemy and SQLite and display/interact with it in a web interface.
+Simple database of Pokémons using FastAPI, SQLAlchemy and SQLite, with a web interface for display and interaction.
 
 ## FastAPI
 
-FastAPI is a modern, fast (high-performance), web framework for building APIs with Python. It's designed to be easy to use and fast, while taking advantage of Python's type annotations. Here's an introduction to the main features of FastAPI:
+FastAPI is a modern, fast (high-performance), web framework for building APIs with Python. It's designed to be easy to use and fast, while taking advantage of Python's type annotations.
+
+This project contains several examples progressing from basic to advanced:
+- **01_helloworld**: Basic FastAPI hello world example
+- **02_simple_pokemons**: Simple Pokédex without persistence
+- **03_sql_pokemons**: Pokédex with SQLAlchemy and SQLite
+- **04_sql_html_pokemons**: Full web interface with HTML templates
 
 ## Installation
 

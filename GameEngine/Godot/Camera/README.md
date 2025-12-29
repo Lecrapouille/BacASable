@@ -1,7 +1,7 @@
 # Orbital Camera
 
-Oribtal Camera. This code is a portage to Godot code from the Unity3D code made by the
-Youtube channel Game Dev Guide "Building a Camera Controller for a Strategy Game"
+Orbital Camera. This code is a port to Godot from the Unity3D code made by the
+YouTube channel Game Dev Guide "Building a Camera Controller for a Strategy Game"
 https://youtu.be/rnqF6S7PfFA
 
 ## Bindings
@@ -16,7 +16,7 @@ https://youtu.be/rnqF6S7PfFA
 - `I`: camera CW rotation.
 - left mouse button pressed: camera translation.
 - middle mouse button pressed: camera rotation.
-- mouse scroll: zoom (not fonctional).
+- mouse scroll: zoom (not functional).
 - double left button click on the moving cube: track the cube.
 - `ESCAPE`: stop tracking the cube.
 
@@ -28,7 +28,7 @@ https://youtu.be/rnqF6S7PfFA
 
 ## Scene Graph
 
-- CameraRig: dummy node tracking a Camera. Used for offseting the camera position. It holds the script for controlling the camera.
-- MovingClickableCube: Use sub-nodes Area + CollisionShape to allow mouse click (like Unity's onMouseDown()). Hold a script to make move. Use a timer to change to movement. Since the important
-part is the camera control, this script is verybasic.
-- Cube1 ... Cube3: just dummy object to simulate a real nicely modelized world.
+- CameraRig: dummy node tracking a Camera. Used for offsetting the camera position. It holds the script for controlling the camera.
+- MovingClickableCube: Uses sub-nodes Area + CollisionShape to allow mouse clicks (like Unity's onMouseDown()). Holds a script to make it move. Uses a timer to change the movement. Since the important
+part is the camera control, this script is very basic.
+- Cube1 ... Cube3: just dummy objects to simulate a real nicely modeled world.

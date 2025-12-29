@@ -1,5 +1,7 @@
-# Unity scripts
+# Unity Scripts
 
-## Transform
+Unity game engine examples and experiments.
 
-Experiment local position vs. world position
+## Transform
+
+Experiments with local position vs. world position transformations. See the Transform subfolder for detailed examples.

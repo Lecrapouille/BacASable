@@ -1,10 +1,14 @@
-Test https://robotframework.org/ testant une interaction avec une page web: lancer google, accepter la license, faire une recherche, cliquer sur le 1er lien.
+# Robot Framework
+
+Testing https://robotframework.org/ for web interaction: launching Google, accepting the license, performing a search, clicking on the first link.
+
+## Installation
 
 ```bash
 /bin/python3 -m pip install robotframework robotframework-seleniumlibrary
 ```
 
-Lancer les tests
+## Running Tests
 
 ```bash
 robot tests/test.robot

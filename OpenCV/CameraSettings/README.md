@@ -1,6 +1,6 @@
-# Camera intrasic and extrasic settings
+# Camera Intrinsic and Extrinsic Settings
 
-Not a code of mine! See:
+Not code of mine! See:
 - (en) https://learnopencv.com/camera-calibration-using-opencv
 
 More links:

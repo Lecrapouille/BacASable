@@ -1,9 +1,9 @@
 # Trying GTK-server and GTK+2
 
-These are very very basic examples GTK+2 (containing deprecated GTK+2 routines) for testing GTK-server https://www.gtk-server.org/
+These are very basic examples of GTK+2 (containing deprecated GTK+2 routines) for testing GTK-server https://www.gtk-server.org/
 
 Examples have been adapted from examples given within the GTK-server package.
-They are developped quick and dirty and as it. So they are very usuable 'as it'.
+They are developed quick and dirty and as-is. So they are very usable 'as-is'.
 
 - gtk_drawing_area-not-working.bash: gtk drawing area (not working WIP)
 
@@ -30,7 +30,7 @@ chmod +x gtk_image-tcp.bash
 ./gtk_image-fifo.bash
 ```
 
-- gtk_image.gforth: (Linux) portage of gtk_image-fifo.bash to gforth. You'll need to install gforth and https://github.com/irdvo/ffl. And you need to adapt the path to `gtk-server.cfg` in the line `s" gtk-server.cfg" s" /tmp/fifo" gsv+open 0= [IF]` and the line `fpath path= /home/qq/ffl/|./` to find ffl files.
+- gtk_image.gforth: (Linux) port of gtk_image-fifo.bash to gforth. You'll need to install gforth and https://github.com/irdvo/ffl. And you need to adapt the path to `gtk-server.cfg` in the line `s" gtk-server.cfg" s" /tmp/fifo" gsv+open 0= [IF]` and the line `fpath path= /home/qq/ffl/|./` to find ffl files.
   - In the first console:
 ```sh
 gtk-server-gtk2 -fifo=/tmp/fifo
@@ -42,7 +42,7 @@ gforth
 include gtk_image.gforth
 ```
 
-- gtk_image-tcp.forthwin (Windows 10) portage of gtk_image-fifo.bash to ForthWin.
+- gtk_image-tcp.forthwin (Windows 10) port of gtk_image-fifo.bash to ForthWin.
   - From Window10 prompt (or bat file):
 ```bat
 gtk-server -tcp=localhost:50000 -detach

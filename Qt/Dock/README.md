@@ -1,15 +1,29 @@
-# Packages de base Qt6 (obligatoires)
+# Qt6 Dock Widget Examples
 
+Examples demonstrating dock widgets and layouts in Qt6.
+
+## Prerequisites
+
+### Base Qt6 packages (required)
+
+```bash
 sudo apt-get install qt6-base-dev qt6-base-dev-tools
+```
 
-# Compilateur et outils de build
+### Compiler and build tools
 
+```bash
 sudo apt-get install build-essential cmake
+```
 
-# Packages supplémentaires recommandés
+### Additional recommended packages
 
+```bash
 sudo apt-get install libgl-dev libglx-dev libopengl-dev libvulkan-dev
+```
 
-# Pour Qt Creator (optionnel mais recommandé pour le développement)
+### Qt Creator (optional but recommended for development)
 
+```bash
 sudo apt-get install qtcreator
+```

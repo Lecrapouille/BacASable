@@ -1,8 +1,8 @@
-# Region Of Interest from an Segment Line
+# Region Of Interest from a Segment Line
 
-In a given image, let suppose that a region with the shape of an oriented rectangle is interesting us and we want to crop it. This Python code is helping us to do this.
+In a given image, let's suppose that a region with the shape of an oriented rectangle is interesting to us and we want to crop it. This Python code helps us to do this.
 
-Why we need an oriented rectangle as region of interest ?
+Why do we need an oriented rectangle as a region of interest?
 
 From an input image, like this one:
 
@@ -12,11 +12,11 @@ in which points and segment lines are defined in the associated [file](doc/input
 
 ![input2](doc/segments.jpg)
 
-After "inflating" these segments to obtain the oriented rectangles as bounding boxes, are shown in this figure:
+After "inflating" these segments to obtain the oriented rectangles as bounding boxes, they are shown in this figure:
 
 ![debug](doc/debug.jpg)
 
-After croping these oriented rectangles we obtained these two images:
+After cropping these oriented rectangles, we obtained these two images:
 
 ![output1](doc/output0.jpg)
 

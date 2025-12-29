@@ -1,2 +1,2 @@
-Implement in C++ an ultra-basic Forth interpreter wrapping a thin C++ abstraction library such as
-integrating Bullet and OpenSceneGraph or symbolic manipulations.
+Implementation in C++ of an ultra-basic Forth interpreter wrapping thin C++ abstraction libraries such as
+those integrating Bullet and OpenSceneGraph or symbolic manipulation libraries.
