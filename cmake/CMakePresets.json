@@ -1,0 +1,93 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "base-release",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_POLICY_DEFAULT_CMP0091": "NEW",
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/build/Release/generators/conan_toolchain.cmake"
+            }
+        },
+        {
+            "name": "base-debug",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_POLICY_DEFAULT_CMP0091": "NEW",
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/build/Debug/generators/conan_toolchain.cmake"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "inherits": "base-release"
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "inherits": "base-debug"
+        },
+        {
+            "name": "asan",
+            "displayName": "Debug + AddressSanitizer",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "ENABLE_ASAN": "ON"
+            }
+        },
+        {
+            "name": "ubsan",
+            "displayName": "Debug + UndefinedBehaviorSanitizer",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "ENABLE_UBSAN": "ON"
+            }
+        },
+        {
+            "name": "tsan",
+            "displayName": "Debug + ThreadSanitizer",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "ENABLE_TSAN": "ON"
+            }
+        },
+        {
+            "name": "coverage",
+            "displayName": "Debug + Code Coverage",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "ENABLE_COVERAGE": "ON"
+            }
+        },
+        {
+            "name": "ci",
+            "displayName": "CI (warnings as errors, no tests)",
+            "inherits": "base-release",
+            "cacheVariables": {
+                "ENABLE_WERROR": "ON",
+                "BUILD_TESTING": "OFF"
+            }
+        }
+    ],
+    "buildPresets": [
+        {"name": "release",  "configurePreset": "release"},
+        {"name": "debug",    "configurePreset": "debug"},
+        {"name": "asan",     "configurePreset": "asan"},
+        {"name": "ubsan",    "configurePreset": "ubsan"},
+        {"name": "tsan",     "configurePreset": "tsan"},
+        {"name": "coverage", "configurePreset": "coverage"},
+        {"name": "ci",       "configurePreset": "ci"}
+    ],
+    "testPresets": [
+        {"name": "release",  "configurePreset": "release",  "output": {"outputOnFailure": true}},
+        {"name": "debug",    "configurePreset": "debug",    "output": {"outputOnFailure": true}},
+        {"name": "asan",     "configurePreset": "asan",     "output": {"outputOnFailure": true}},
+        {"name": "ubsan",    "configurePreset": "ubsan",    "output": {"outputOnFailure": true}},
+        {"name": "tsan",     "configurePreset": "tsan",     "output": {"outputOnFailure": true}},
+        {"name": "coverage", "configurePreset": "coverage", "output": {"outputOnFailure": true}}
+    ]
+}

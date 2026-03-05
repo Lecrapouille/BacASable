@@ -1,0 +1,12 @@
+[requires]
+mp-units/2.3.0
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[options]
+mp-units/*:cxx_modules=False
+
+[layout]
+cmake_layout
