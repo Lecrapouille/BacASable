@@ -1,10 +1,9 @@
-# ============================================================================
+###############################################################################
 # Precompiled Headers Management
-# ============================================================================
 #
 # This module provides functions for managing Precompiled Headers (PCH).
 # PCH significantly speeds up compilation by pre-processing commonly used
-# headers once and reusing them across all translation units.
+# headers once and reusing them across all translation units (i.e. STL headers).
 #
 # Functions:
 #   ensure_global_pch_target_exists() - Create global PCH target (internal)
@@ -13,40 +12,33 @@
 #   target_configure_pch(<target> ..) - Auto-select global or custom PCH
 #
 # Usage:
-#   # Use global PCH (recommended)
+#   # Either use the generated global PCH
 #   target_use_global_pch(mylib)
 #
-#   # Or custom PCH file from module's pch/ directory
+#   # Or use a custom PCH file from the module directory
 #   target_configure_pch(mylib PCH pch/pch.hpp)
 #
 #   # Or per-target PCH with inline headers list
 #   target_enable_pch(mylib
 #       HEADERS <vector> <string> <memory>
 #   )
-#
-# ============================================================================
+###############################################################################
 
 
-# ############################################################################
-#                         GLOBAL PCH TARGET
-# ############################################################################
-
-
-# ----------------------------------------------------------------------------
+###############################################################################
 # ensure_global_pch_target_exists()
-# ----------------------------------------------------------------------------
-# Create a global PCH target if it doesn't exist yet.
-# This target is compiled once and reused by all modules.
 #
-# The PCH includes common STL headers that are used throughout the project.
-# Using a global PCH avoids recompiling the same headers for each module.
+# Create a global PCH target if it doesn't exist yet. The PCH includes common
+# STL headers that are used throughout the project. Using a global PCH avoids
+# recompiling the same headers for each module. This target is compiled once
+# and reused by all modules.
 #
 # Generated files:
 #   - ${CMAKE_BINARY_DIR}/generated/global_pch.hpp     : PCH header
 #   - ${CMAKE_BINARY_DIR}/generated/global_pch.cpp     : Empty source (required by CMake)
 #   - ${CMAKE_BINARY_DIR}/generated/global_pch.hpp.gch : Compiled PCH (GCC)
 #   - ${CMAKE_BINARY_DIR}/generated/global_pch.hpp.pch : Compiled PCH (Clang)
-# ----------------------------------------------------------------------------
+###############################################################################
 
 function(ensure_global_pch_target_exists)
 
@@ -55,13 +47,7 @@ function(ensure_global_pch_target_exists)
         return()
     endif()
 
-    message(STATUS "Creating global PCH target: global_pch")
-
-    # ------------------------------------------------------------------
-    # Generate PCH Source Files
-    # ------------------------------------------------------------------
-    # file(CONFIGURE) only writes if content changed, avoiding
-    # unnecessary PCH recompilation on every cmake reconfigure.
+    message(STATUS "  Creating global PCH target: global_pch")
 
     set(_pch_header_path "${CMAKE_BINARY_DIR}/generated/global_pch.hpp")
     set(_pch_source_path "${CMAKE_BINARY_DIR}/generated/global_pch.cpp")
@@ -69,7 +55,9 @@ function(ensure_global_pch_target_exists)
     # Ensure directory exists
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated")
 
-    # PCH header with common includes
+    # Create the PCH header with common includes
+    # file(CONFIGURE) only writes if content changed, avoiding
+    # unnecessary PCH recompilation on every cmake reconfigure.
     # NOTE: file(CONFIGURE) uses @VAR@ syntax, not ${VAR}
     # Use NEWLINE_STYLE UNIX to ensure consistent line endings
     file(CONFIGURE
@@ -149,12 +137,9 @@ function(ensure_global_pch_target_exists)
         NEWLINE_STYLE UNIX
     )
 
-    # ------------------------------------------------------------------
     # Create PCH Target
-    # ------------------------------------------------------------------
     # This static library only exists to compile the PCH.
     # Other targets will REUSE_FROM this target.
-
     add_library(global_pch STATIC
         "${_pch_header_path}"
         "${_pch_source_path}"
@@ -178,15 +163,11 @@ function(ensure_global_pch_target_exists)
 endfunction()
 
 
-# ############################################################################
-#                         TARGET FUNCTIONS
-# ############################################################################
-
-
-# ----------------------------------------------------------------------------
+###############################################################################
 # target_use_global_pch(<target>)
-# ----------------------------------------------------------------------------
+#
 # Configure a target to use the global precompiled header.
+# All targets share the same compiled PCH, reducing build times.
 #
 # Arguments:
 #   target_name - The CMake target to configure
@@ -194,10 +175,7 @@ endfunction()
 # Example:
 #   add_library(mylib src/mylib.cpp)
 #   target_use_global_pch(mylib)
-#
-# This is the recommended way to use PCH in this project.
-# All targets share the same compiled PCH, reducing build times.
-# ----------------------------------------------------------------------------
+###############################################################################
 
 function(target_use_global_pch target_name)
 
@@ -214,12 +192,13 @@ function(target_use_global_pch target_name)
 endfunction()
 
 
-# ----------------------------------------------------------------------------
+###############################################################################
 # target_enable_pch(<target>
 #                   HEADERS <header1> <header2> ...
 #                   [PRIVATE|PUBLIC|INTERFACE])
-# ----------------------------------------------------------------------------
+#
 # Configure a target with a custom precompiled header.
+# Use this when a target needs headers not in the global PCH.
 #
 # Arguments:
 #   target_name - The CMake target to configure
@@ -237,9 +216,7 @@ endfunction()
 #           <memory>
 #           "mylib/common.h"
 #   )
-#
-# Use this when a target needs headers not in the global PCH.
-# ----------------------------------------------------------------------------
+###############################################################################
 
 function(target_enable_pch target_name)
 
@@ -268,9 +245,9 @@ function(target_enable_pch target_name)
 endfunction()
 
 
-# ----------------------------------------------------------------------------
+###############################################################################
 # target_configure_pch(<target> [PCH <path>])
-# ----------------------------------------------------------------------------
+#
 # Configure PCH for a target, choosing between global or custom PCH.
 #
 # Arguments:
@@ -303,7 +280,7 @@ endfunction()
 #   #pragma once
 #   #include "global_pch.hpp"  // Global PCH (STL headers)
 #   #include <boost/asio.hpp>  // Module-specific headers
-# ----------------------------------------------------------------------------
+###############################################################################
 
 function(target_configure_pch target_name)
 
@@ -326,7 +303,7 @@ function(target_configure_pch target_name)
         # Ensure global PCH directory exists (for potential inclusion)
         ensure_global_pch_target_exists()
 
-        # Add generated directory so custom PCH can #include "pch.hpp" (global PCH)
+        # Add generated directory so custom PCH can #include "global_pch.hpp" (global PCH)
         target_include_directories(${target_name} PRIVATE
             "${CMAKE_BINARY_DIR}/generated"
         )

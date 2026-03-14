@@ -1,8 +1,11 @@
 ###############################################################################
 # Code Coverage Configuration
 #
-# This module provides functions to enable code coverage instrumentation
-# and generate coverage reports using gcov/lcov.
+# This module provides functions to enable code coverage instrumentation and
+# generate coverage reports using gcov/lcov. It creates custom targets for
+# coverage: coverage, coverage-open, and coverage-clean.
+#
+# Note: Coverage should be used with Debug builds for accurate line mapping.
 #
 # Prerequisites:
 #   - GCC or Clang compiler
@@ -17,78 +20,25 @@
 #   cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
 #   cmake --build build
 #   ctest --test-dir build
-#   cmake --build build --target coverage
+#   cmake --build build --target coverage         # Generate report
+#   cmake --build build --target coverage-open    # Generate report and open it in browser
+#   cmake --build build --target coverage-clean   # Remove coverage data
 #
 # Generated files:
 #   - build/coverage/         : HTML report directory
 #   - build/coverage.info     : lcov data file
-#
-# Note: Coverage should be used with Debug builds for accurate line mapping.
-#
 ###############################################################################
 
 
 ###############################################################################
-# Code Coverage
-#
-# Instrument code for coverage analysis with gcov/lcov.
+# Enable code coverage instrumentation (gcov/lcov)
 #
 # Usage:
 #   cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
 #   cmake --build build --target coverage
 ###############################################################################
 
-option(ENABLE_COVERAGE "Enable code coverage instrumentation (gcov/lcov)" OFF)
-
-
-###############################################################################
-# target_enable_coverage(<target>)
-#
-# Apply coverage instrumentation flags to the specified target.
-#
-# Arguments:
-#   target_name - The CMake target to instrument
-#
-# Example:
-#   add_library(mylib src/mylib.cpp)
-#   target_enable_coverage(mylib)
-#
-# Coverage flags:
-#   --coverage     : Enable gcov instrumentation (shorthand for -fprofile-arcs -ftest-coverage)
-#   -fprofile-arcs : Generate .gcda files at runtime
-#   -ftest-coverage: Generate .gcno files at compile time
-###############################################################################
-
-function(target_enable_coverage target_name)
-
-    if(NOT ENABLE_COVERAGE)
-        return()
-    endif()
-
-    message(STATUS "  Enabling coverage for ${target_name}")
-
-    # Set coverage compile flags
-    target_compile_options(${target_name} PRIVATE
-        --coverage    # is equivalent to -fprofile-arcs -ftest-coverage
-        -O0           # Disable optimization for accurate coverage
-        -g            # Debug symbols for line mapping
-    )
-
-    # Set coverage link flags
-    target_link_options(${target_name} PRIVATE --coverage)
-
-endfunction()
-
-
-###############################################################################
-# Setup Coverage Target
-#
-# Create a custom target 'coverage' that runs tests and generates reports.
-#
-# This section only executes if ENABLE_COVERAGE is ON.
-#
-# Usage: cmake --build build --target coverage
-###############################################################################
+option(ENABLE_COVERAGE "Enable code coverage instrumentation (for Debug builds)" OFF)
 
 if(ENABLE_COVERAGE)
 
@@ -127,19 +77,11 @@ if(ENABLE_COVERAGE)
         open          # macOS
     )
 
-    # Create Coverage Targets
+    # Create custom coverage targets: coverage, coverage-open, coverage-clean
     if(LCOV_PATH AND GENHTML_PATH)
 
         # Coverage Target
-        #
         # Usage: cmake --build build --target coverage
-        #
-        # Steps:
-        #   1. Reset coverage counters (lcov --zerocounters)
-        #   2. Run tests (ctest)
-        #   3. Capture coverage data (lcov --capture)
-        #   4. Remove external code from report (lcov --remove)
-        #   5. Generate HTML report (genhtml)
         add_custom_target(coverage
             COMMENT "Generating code coverage report..."
 
@@ -185,6 +127,11 @@ if(ENABLE_COVERAGE)
             VERBATIM
         )
 
+        message(STATUS "Coverage targets created")
+        message(STATUS "  cmake --build build --target coverage       # Generate report")
+
+        # Coverage Open Target
+        # Usage: cmake --build build --target coverage-open
         if(BROWSER_EXECUTABLE)
             add_custom_target(coverage-open
                 COMMENT "Opening coverage report in browser..."
@@ -194,10 +141,12 @@ if(ENABLE_COVERAGE)
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                 VERBATIM
             )
+            message(STATUS "  cmake --build build --target coverage-open  # Generate + open in browser")
+        else()
+            message(STATUS "No browser found: 'coverage-open' target unavailable")
         endif()
 
         # Coverage Clean Target
-        #
         # Usage: cmake --build build --target coverage-clean
         add_custom_target(coverage-clean
             COMMENT "Cleaning coverage data..."
@@ -208,13 +157,6 @@ if(ENABLE_COVERAGE)
             VERBATIM
         )
 
-        message(STATUS "Coverage targets created")
-        message(STATUS "  cmake --build build --target coverage       # Generate report")
-        if(BROWSER_EXECUTABLE)
-            message(STATUS "  cmake --build build --target coverage-open  # Generate + open in browser")
-        else()
-            message(STATUS "No browser found: 'coverage-open' target unavailable")
-        endif()
         message(STATUS "  cmake --build build --target coverage-clean # Remove coverage data")
         message(STATUS "  Report: build/coverage/index.html")
 
@@ -225,8 +167,44 @@ if(ENABLE_COVERAGE)
         )
     endif()
 
-    # Register for configuration summary
-    list(APPEND _ENABLED_FEATURES "Coverage")
-    set(_ENABLED_FEATURES "${_ENABLED_FEATURES}" CACHE INTERNAL "")
+    add_enabled_feature("Coverage")
 
 endif()
+
+###############################################################################
+# target_enable_coverage(<target>)
+#
+# Apply coverage instrumentation flags to the specified target.
+#
+# Arguments:
+#   target_name - The CMake target to instrument
+#
+# Example:
+#   add_library(mylib src/mylib.cpp)
+#   target_enable_coverage(mylib)
+#
+# Coverage flags:
+#   --coverage     : Enable gcov instrumentation (shorthand for -fprofile-arcs -ftest-coverage)
+#   -fprofile-arcs : Generate .gcda files at runtime
+#   -ftest-coverage: Generate .gcno files at compile time
+###############################################################################
+
+function(target_enable_coverage target_name)
+
+    if(NOT ENABLE_COVERAGE)
+        return()
+    endif()
+
+    message(STATUS "  Enabling coverage for ${target_name}")
+
+    # Set coverage compile flags
+    target_compile_options(${target_name} PRIVATE
+        --coverage    # is equivalent to -fprofile-arcs -ftest-coverage
+        -O0           # Disable optimization for accurate coverage
+        -g            # Debug symbols for line mapping
+    )
+
+    # Set coverage link flags
+    target_link_options(${target_name} PRIVATE --coverage)
+
+endfunction()

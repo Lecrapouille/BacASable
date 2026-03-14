@@ -141,8 +141,6 @@ if(ENABLE_DOXYGEN)
     message(STATUS "  Run: cmake --build build --target docs")
     message(STATUS "  Output: build/docs/html/index.html")
 
-    # Register Doxygen for configuration summary
-    list(APPEND _ENABLED_FEATURES "Doxygen")
-    set(_ENABLED_FEATURES "${_ENABLED_FEATURES}" CACHE INTERNAL "")
+    add_enabled_feature("Doxygen")
 
 endif()

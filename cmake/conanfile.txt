@@ -1,5 +1,7 @@
 [requires]
 mp-units/2.3.0
+gtest/1.15.0
+backward-cpp/1.6
 
 [generators]
 CMakeDeps

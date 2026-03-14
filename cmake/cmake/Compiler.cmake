@@ -1,27 +1,24 @@
 ###############################################################################
-# Compiler Warnings and Build Flags
+# Compiler & Build Configuration
 #
-# This module configures:
-#   - Default build type (Release if unspecified)
+# This module configures the compiler and build system:
+#   - Build type (Release if unspecified)
 #   - Per-build-type compiler flags (Debug / Release)
 #   - Position Independent Code (PIC)
-#   - target_set_warnings(): strict warning flags for a target
+#   - Link Time Optimization (LTO)
+#   - Strict warning flags per target
 #
 # Options:
 #   ENABLE_WERROR      : Treat warnings as errors (-Werror). Default: OFF
 #   CMAKE_BUILD_TYPE   : Build configuration. Default: Release
 #                        Values: Debug, Release, MinSizeRel, RelWithDebInfo
-#
 # Usage:
 #   cmake -S . -B build -DENABLE_WERROR=ON -DCMAKE_BUILD_TYPE=Debug
-#
 ###############################################################################
 
 
 ###############################################################################
-# ENABLE_WERROR - Treat warnings as errors
-#
-# Treat compiler warnings as errors (-Werror).
+# Treat compiler warnings as errors
 #
 # Usage:
 #   cmake -S . -B build -DENABLE_WERROR=ON
@@ -29,12 +26,17 @@
 
 option(ENABLE_WERROR "Treat compiler warnings as errors (-Werror)" OFF)
 
+if(ENABLE_WERROR)
+    message(STATUS "Werror: Enabled")
+    add_enabled_feature("Werror")
+endif()
+
 
 ###############################################################################
-# CMAKE_POSITION_INDEPENDENT_CODE - Position Independent Code (PIC)
+# Position Independent Code (PIC)
 #
-# Required for shared libraries and recommended for static libraries
-# that may be linked into shared libraries.
+# Required for shared libraries and recommended for static libraries that may
+# be linked into shared libraries.
 #
 # Usage:
 #   cmake -S . -B build -DCMAKE_POSITION_INDEPENDENT_CODE=ON
@@ -42,16 +44,20 @@ option(ENABLE_WERROR "Treat compiler warnings as errors (-Werror)" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+if(CMAKE_POSITION_INDEPENDENT_CODE)
+    message(STATUS "PIC: Enabled")
+    add_enabled_feature("PIC")
+endif()
+
 
 ###############################################################################
-# Default Build Type
+# Available build types:
+#   - Debug          : No optimization, debug symbols
+#   - Release        : Full optimization, no debug
+#   - MinSizeRel     : Optimize for size
+#   - RelWithDebInfo : Optimization with debug info
 #
 # If no build type is specified, default to Release.
-# Available build types:
-#   - Debug        : No optimization, debug symbols
-#   - Release      : Full optimization, no debug
-#   - MinSizeRel   : Optimize for size
-#   - RelWithDebInfo: Optimization with debug info
 ###############################################################################
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -75,8 +81,8 @@ string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g3 -ggdb")
 
 
 ###############################################################################
-# Apply strict compiler warnings to a target (GCC / Clang, Linux).
-# Flags are PRIVATE so they don't propagate to consumers.
+# Set compiler warnings to a target (GCC / Clang, Linux) for all builds (Debug
+# and Release). Note: Flags are PRIVATE so they don't propagate to consumers.
 #
 # Arguments:
 #   target_name - CMake target to configure
@@ -90,8 +96,6 @@ string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g3 -ggdb")
 
 function(target_set_warnings target_name)
 
-    # These warnings catch common programming errors and improve
-    # code quality. They are applied to all builds (Debug & Release).
     target_compile_options(${target_name} PRIVATE
         # Basic warning sets
         -Wall                   # Standard warnings
@@ -114,9 +118,7 @@ function(target_set_warnings target_name)
         -fdiagnostics-color=auto  # Colored compiler output
     )
 
-    # Warnings as Errors (Optional)
-    # When ENABLE_WERROR is ON, treat all warnings as compilation errors.
-    # This is useful for CI pipelines to enforce warning-free code.
+    # Treat warnings as errors (Optional)
     if(ENABLE_WERROR)
         target_compile_options(${target_name} PRIVATE -Werror)
     endif()
@@ -125,25 +127,24 @@ endfunction()
 
 
 ###############################################################################
-# Register Werror for configuration summary
+# Link Time Optimization
+#
+# Whole-program optimization at link time: smaller and faster binaries,
+# but longer link times. Only applied in Release builds.
+#
+# Usage:
+#   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=ON
 ###############################################################################
 
-if(ENABLE_WERROR)
-    list(APPEND _ENABLED_FEATURES "Werror")
-    set(_ENABLED_FEATURES "${_ENABLED_FEATURES}" CACHE INTERNAL "")
-endif()
+option(ENABLE_LTO "Enable Link Time Optimization (for Release builds)" OFF)
 
-
-
-# Link Time Optimization
 if(ENABLE_LTO AND CMAKE_BUILD_TYPE STREQUAL "Release")
     include(CheckIPOSupported)
     check_ipo_supported(RESULT lto_supported OUTPUT lto_error)
     if(lto_supported)
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-        list(APPEND _ENABLED_FEATURES "LTO")
-        set(_ENABLED_FEATURES "${_ENABLED_FEATURES}" CACHE INTERNAL "")
         message(STATUS "LTO: Enabled")
+        add_enabled_feature("LTO")
     else()
         message(WARNING "LTO requested but not supported: ${lto_error}")
     endif()

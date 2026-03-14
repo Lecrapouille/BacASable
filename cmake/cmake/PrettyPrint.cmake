@@ -1,6 +1,5 @@
-# ============================================================================
-# PrettyPrint.cmake - Formatted Console Output
-# ============================================================================
+###############################################################################
+# Formatted Console Output
 #
 # Provides functions for pretty-printing status messages with borders.
 # Automatically detects terminal width.
@@ -12,12 +11,12 @@
 #   print_section_separator()           - Print a separator line
 #   print_section_end()                 - End the bordered section
 #
-# ============================================================================
+###############################################################################
 
-# ============================================================================
+
+###############################################################################
 # Detect Terminal Width
-# ============================================================================
-
+###############################################################################
 function(_detect_terminal_width out_var)
     # Try to get terminal width from environment or tput
     if(DEFINED ENV{COLUMNS})
@@ -51,16 +50,16 @@ endfunction()
 # Detect once at configure time
 _detect_terminal_width(_PP_WIDTH)
 
-# ============================================================================
+###############################################################################
 # print_box(<title>)
-# ============================================================================
 # Print a boxed title (single line with borders).
-#
+##############################################################################
 function(print_box title)
     set(width ${_PP_WIDTH})
     math(EXPR inner_width "${width} - 2")
     
     # Top border
+    message(STATUS "")
     string(REPEAT "═" ${inner_width} line)
     message(STATUS "╔${line}╗")
     
@@ -80,13 +79,13 @@ function(print_box title)
     
     # Bottom border
     message(STATUS "╚${line}╝")
+    message(STATUS "")
 endfunction()
 
-# ============================================================================
+###############################################################################
 # print_section_start(<title>)
-# ============================================================================
 # Print the top of a bordered box with centered title.
-#
+##############################################################################
 function(print_section_start title)
     set(width ${_PP_WIDTH})
     math(EXPR inner_width "${width} - 2")
@@ -115,11 +114,10 @@ function(print_section_start title)
     message(STATUS "╠${sep_line}╣")
 endfunction()
 
-# ============================================================================
+###############################################################################
 # print_section_line(<label> <value>)
-# ============================================================================
 # Print a key-value line inside the box.
-#
+##############################################################################
 function(print_section_line label value)
     set(width ${_PP_WIDTH})
     math(EXPR inner_width "${width} - 2")
@@ -137,11 +135,10 @@ function(print_section_line label value)
     message(STATUS "║${content}${right_pad}║")
 endfunction()
 
-# ============================================================================
+###############################################################################
 # print_section_separator()
-# ============================================================================
 # Print a separator line inside the box.
-#
+##############################################################################
 function(print_section_separator)
     set(width ${_PP_WIDTH})
     math(EXPR inner_width "${width} - 2")
@@ -149,11 +146,10 @@ function(print_section_separator)
     message(STATUS "╟${sep_line}╢")
 endfunction()
 
-# ============================================================================
+###############################################################################
 # print_section_end()
-# ============================================================================
 # Print the bottom border of the box.
-#
+##############################################################################
 function(print_section_end)
     set(width ${_PP_WIDTH})
     math(EXPR inner_width "${width} - 2")
@@ -162,11 +158,10 @@ function(print_section_end)
     message(STATUS "")
 endfunction()
 
-# ============================================================================
+###############################################################################
 # print_status_line(<icon> <text>)
-# ============================================================================
 # Print a status line with icon (for build summary).
-#
+##############################################################################
 function(print_status_line icon text)
     set(width ${_PP_WIDTH})
     math(EXPR inner_width "${width} - 2")
@@ -183,11 +178,10 @@ function(print_status_line icon text)
     message(STATUS "║${content}${right_pad}║")
 endfunction()
 
-# ============================================================================
+###############################################################################
 # print_empty_line()
-# ============================================================================
 # Print an empty line inside the box.
-#
+##############################################################################
 function(print_empty_line)
     set(width ${_PP_WIDTH})
     math(EXPR inner_width "${width} - 2")
