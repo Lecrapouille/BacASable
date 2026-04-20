@@ -52,7 +52,17 @@ endfunction()
 ###############################################################################
 
 function(_summary_init)
-    # Project info box (printed now, before modules are added)
+    # Defer config summary to end of configure
+    cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL _summary_print_deferred)
+endfunction()
+
+###############################################################################
+# _summary_print_project_info()
+#
+# Prints the project info box.
+###############################################################################
+
+function(_summary_print_project_info)
     print_section_start("Project Info")
     print_section_line("Name" "${PROJECT_NAME}")
     print_section_line("Version" "${PROJECT_VERSION}")
@@ -60,9 +70,6 @@ function(_summary_init)
     print_section_line("Source" "${CMAKE_SOURCE_DIR}")
     print_section_line("Build" "${CMAKE_BINARY_DIR}")
     print_section_end()
-
-    # Defer config summary to end of configure
-    cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL _summary_print_deferred)
 endfunction()
 
 ###############################################################################

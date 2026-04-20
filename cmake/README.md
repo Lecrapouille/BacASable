@@ -2,20 +2,20 @@
 
 A reusable CMake infrastructure for C++ multi-module projects. It provides high-level functions to declare libraries and executables with automatic source discovery, strict compiler warnings, precompiled headers, sanitizers, code coverage, doxygen, stack trace (backward-cpp), unit tests (GoogleTest) and more. Dependencies are managed via Conan. Two single functions do the all job `add_module_library()`, `add_module_executable()`.
 
-This infrastructure expects each module to follow a standard directory layout:
+This infrastructure expects each module to follow a standard directory layout (sources and headers are discovered as `*.c`, `*.cpp`, `*.h`, `*.hpp` only):
 
 ```bash
 <module>/
 ├── CMakeLists.txt
-├── include/<module>/   # Public headers
+├── include/<module>/   # Public headers (or include/<subdir>/ when using SUBDIRECTORIES)
 ├── src/                # Sources and private headers
-├── mocks/              # Sources for class mocking (optional)
+├── mock/               # Mock implementations (optional)
 ├── pch/                # Custom precompiled header (optional)
 │   └── pch.hpp
 └── tests/              # GoogleTest unit tests (optional)
 ```
 
-The modules included in this repository (`kinematics`, `odometry`, `robot_controller`) are **demonstration examples only**. They exist to illustrate how to use the CMake functions and are not intended to be reused as-is. The demo uses [mp-units](https://mpusz.github.io/mp-units/) for SI unit handling (velocities in m/s, rad/s) installed from Conan.
+The demo libraries (`kinematics`, `odometry`, `robot_controller`) live under [`robot/`](robot/) in a **multi-subdirectory** layout (`include/<name>/`, `src/<name>/`, …) with one `add_module_library()` call per target and the `SUBDIRECTORIES` keyword. They are **examples only**. The demo uses [mp-units](https://mpusz.github.io/mp-units/) for SI unit handling (velocities in m/s, rad/s) installed from Conan.
 
 ---
 
@@ -25,8 +25,7 @@ All infrastructure files live in the `cmake/` directory. Include `ProjectBootstr
 
 | File | Purpose |
 |------|---------|
-| `ModuleAPI.cmake` | Main API: `add_module_library()`, `add_module_executable()`. |
-| `ModuleInternal.cmake` | Internal helpers used by `ModuleAPI.cmake` (not for direct use). |
+| `Module.cmake` | Main API: `add_module_library()`, `add_module_executable()`, and private `_module_*` helpers (glob, banner, configure, gtest). |
 | `Conan.cmake` | Conan 2.x integration. Provides `find_conan_package()` wrapper. |
 | `Compiler.cmake` | Default build type, PIC, LTO, debug flags, `target_set_warnings()`. |
 | `PCH.cmake` | Precompiled headers: global auto-generated PCH and custom per-module PCH support. |
@@ -253,6 +252,7 @@ add_module_library(<name>
     [PUBLIC_DEPENDENCIES <dep1> <dep2> ...]
     [PRIVATE_DEPENDENCIES <dep1> <dep2> ...]
     [TEST_DEPENDENCIES <dep1> <dep2> ...]
+    [SUBDIRECTORIES <s1> [<s2> ...]]
 )
 ```
 
@@ -269,26 +269,31 @@ add_module_library(<name>
 | `PUBLIC_DEPENDENCIES` | list | No | Libraries linked with `PUBLIC` visibility. Propagated to consumers of this library. |
 | `PRIVATE_DEPENDENCIES` | list | No | Libraries linked with `PRIVATE` visibility. Used only internally. |
 | `TEST_DEPENDENCIES` | list | No | Additional libraries linked to the `<name>_tests` test executable. |
+| `SUBDIRECTORIES` | list | No | If set, restricts discovery to `include/<s>/`, `src/<s>/`, `tests/<s>/`, and `mock/<s>/` for each name `s` in the list (still recursive under those roots). If omitted, the whole `include/`, `src/`, `tests/`, and `mock/` trees are used. |
 
 #### Automatic Behaviors
 
-- **Source discovery**: Globs `src/*.cpp`,`include/*.hpp` with `CONFIGURE_DEPENDS`.
+- **Source discovery**: Globs `src/**/*.cpp`, `src/**/*.c`, `include/**/*.hpp`, `include/**/*.h`, and the same extensions under `src/` for private headers, with `CONFIGURE_DEPENDS`.
 - **Library type**: Creates a `STATIC` library by default, or `SHARED` if the flag is provided.
 - **RPATH (shared only)**: Configures `$ORIGIN/../lib` RPATH so executables find the `.so` at runtime.
 - **Alias target**: Creates `${PROJECT_NAME}::<name>` alias for safe usage in `target_link_libraries()`.
 - **Include directories**: `include/` is `PUBLIC`, `src/` is `PRIVATE`.
 - **Compiler warnings**: Applies strict warnings via `target_set_warnings()`.
+- **GNU + Debug**: [`Compiler.cmake`](cmake/Compiler.cmake) adds `_GLIBCXX_ASSERTIONS` globally for **GCC** in the **Debug** configuration (extra libstdc++ run-time checks).
 - **Sanitizers**: Applies ASAN/UBSAN/TSAN if enabled globally.
 - **Coverage**: Instruments for coverage if `ENABLE_COVERAGE` is `ON`.
 - **PCH**: Uses the global PCH unless `PCH` argument is provided.
 - **Installation**: Installs to `lib/`, `include/` under component `devel` (unless `NO_INSTALL`).
-- **Tests**: Creates `<name>_tests` executable if `BUILD_TESTING` is `ON` and `tests/*.cpp` files exist.
+- **Tests**: Creates `<name>_tests` executable if `BUILD_TESTING` is `ON` and matching test sources exist.
+- **Install (headers)**: Installs all of `include/` by default; with `SUBDIRECTORIES`, installs each `include/<s>/` only.
 
 #### Examples
 
 ```cmake
-# Demo project example (kinematics with SI units and custom PCH)
+# Demo layout: one CMake folder, several libs under include/<lib>/, src/<lib>/ (see robot/CMakeLists.txt)
 add_module_library(kinematics
+    VERSION 0.1.0
+    SUBDIRECTORIES kinematics
     PCH pch/pch.hpp
     PUBLIC_DEPENDENCIES
         mp-units::mp-units
@@ -328,6 +333,7 @@ add_module_executable(<name>
     [COMPILE_OPTIONS <opt1> <opt2> ...]
     [DEPENDENCIES <dep1> <dep2> ...]
     [TEST_DEPENDENCIES <dep1> <dep2> ...]
+    [SUBDIRECTORIES <s1> [<s2> ...]]
 )
 ```
 
@@ -342,31 +348,30 @@ add_module_executable(<name>
 | `COMPILE_OPTIONS` | list | No | Extra compile flags for this target only (e.g., `-Wno-shadow`). |
 | `DEPENDENCIES` | list | No | Libraries linked with `PRIVATE` visibility. |
 | `TEST_DEPENDENCIES` | list | No | Libraries for tests (overrides `DEPENDENCIES` for mock injection). Falls back to `DEPENDENCIES` if not specified. |
+| `SUBDIRECTORIES` | list | No | Same meaning as for `add_module_library()` for `include/`, `src/`, and `tests/`. |
 
 #### Automatic Behaviors
 
-- **Source discovery**: Globs `src/*.cpp`, `include/*.hpp`, `src/*.hpp`.
+- **Source discovery**: Globs `*.c`, `*.cpp`, `*.h`, `*.hpp` under `include/` and `src/` (either whole trees or per `SUBDIRECTORIES` entry).
 - **Include directories**: Both `include/` and `src/` are `PRIVATE`.
 - **Compiler warnings**: Applies strict warnings via `target_set_warnings()`.
+- **GNU + Debug**: Same global `_GLIBCXX_ASSERTIONS` in **Debug** for **GCC** as for libraries (see [`Compiler.cmake`](cmake/Compiler.cmake)).
 - **Sanitizers**: Applies ASAN/UBSAN/TSAN if enabled globally.
 - **Coverage**: Instruments for coverage if `ENABLE_COVERAGE` is `ON`.
 - **Stack traces**: Automatically links `Backward::Backward` for crash stack traces.
 - **PCH**: Uses the global PCH unless `PCH` argument is provided.
 - **Installation**: Installs to `bin/` under component `runtime` (unless `NO_INSTALL`). Automatically deploys runtime shared library dependencies to `lib/`.
-- **Tests**: Creates `<name>_tests` executable if `BUILD_TESTING` is `ON` and `tests/*.cpp` exist. The test executable recompiles all sources from `src/` **except** `main.cpp`, allowing you to test application logic without the entry point.
+- **Tests**: Creates `<name>_tests` if `BUILD_TESTING` is `ON` and test sources exist. The test executable recompiles all `src/` sources **except** `main.cpp` / `main.c`, allowing you to test application logic without the entry point.
 
 #### Example
 
 ```cmake
-# Demo project example (robot_controller with custom PCH)
-add_module_executable(robot_controller
+# Demo executable (see application/CMakeLists.txt)
+add_module_executable(application
+    VERSION 1.0.0
     PCH pch/pch.hpp
-    DEPENDENCIES
-        kinematics
-        odometry
-    TEST_DEPENDENCIES
-        kinematics
-        odometry
+    DEPENDENCIES      robot_controller
+    TEST_DEPENDENCIES robot_controller_mock
 )
 ```
 

@@ -17,6 +17,7 @@
 #
 ###############################################################################
 
+include(GNUInstallDirs)
 
 ###############################################################################
 # C++ Standard
@@ -73,7 +74,7 @@ include(Sanitizers)         # Enable sanitizers (ASAN, UBSAN, TSAN)
 include(Coverage)           # Enable code coverage instrumentation (gcov/lcov)
 include(Doxygen)            # Enable Doxygen documentation generation
 include(Testing)            # Enable testing infrastructure (GoogleTest, CTest)
-include(ModuleAPI)          # Enable module API (add_module_library(), add_module_executable())
+include(Module)             # Enable building modules (libraries and executables)
 include(Summary)            # Enable summary box
 
 ###############################################################################
@@ -81,3 +82,4 @@ include(Summary)            # Enable summary box
 ###############################################################################
 
 _summary_init()
+_summary_print_project_info()

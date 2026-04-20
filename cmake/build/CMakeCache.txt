@@ -14,6 +14,9 @@
 # EXTERNAL cache entries
 ########################
 
+//Path to a program.
+BROWSER_EXECUTABLE:FILEPATH=/usr/bin/xdg-open
+
 //Build unit tests
 BUILD_TESTING:BOOL=ON
 
@@ -259,7 +262,7 @@ DEBUG_STRIP_EXE:FILEPATH=/usr/bin/strip
 ENABLE_ASAN:BOOL=OFF
 
 //Enable code coverage instrumentation (for Debug builds)
-ENABLE_COVERAGE:BOOL=OFF
+ENABLE_COVERAGE:BOOL=ON
 
 //Enable Doxygen documentation generation
 ENABLE_DOXYGEN:BOOL=OFF
@@ -282,8 +285,17 @@ ENABLE_UBSAN:BOOL=OFF
 //Treat compiler warnings as errors (-Werror)
 ENABLE_WERROR:BOOL=OFF
 
+//Path to a program.
+GCOV_PATH:FILEPATH=/usr/bin/gcov
+
+//Path to a program.
+GENHTML_PATH:FILEPATH=/usr/bin/genhtml
+
 //The directory containing a CMake configuration file for GTest.
 GTest_DIR:PATH=/home/qq/MyGithub/BacASable/cmake/build/build/Debug/generators
+
+//Path to a program.
+LCOV_PATH:FILEPATH=/usr/bin/lcov
 
 //The directory containing a CMake configuration file for LibLZMA.
 LibLZMA_DIR:PATH=/home/qq/MyGithub/BacASable/cmake/build/build/Debug/generators
@@ -328,7 +340,7 @@ CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
 //Minor version of cmake used to create the current loaded cache
 CMAKE_CACHE_MINOR_VERSION:INTERNAL=31
 //Patch version of cmake used to create the current loaded cache
-CMAKE_CACHE_PATCH_VERSION:INTERNAL=10
+CMAKE_CACHE_PATCH_VERSION:INTERNAL=11
 //ADVANCED property for variable: CMAKE_COLOR_MAKEFILE
 CMAKE_COLOR_MAKEFILE-ADVANCED:INTERNAL=1
 //Path to CMake executable.
@@ -423,7 +435,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=5
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=3
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP
@@ -469,7 +481,7 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 STACKTRACE_INIT_SOURCE:INTERNAL=/home/qq/MyGithub/BacASable/cmake/build/generated/stacktrace_init.cpp
-_ENABLED_FEATURES:INTERNAL=PIC;SeparateDebugSymbols;Stacktrace;Tests
+_ENABLED_FEATURES:INTERNAL=PIC;GLIBCXX_ASSERTIONS;SeparateDebugSymbols;Stacktrace;Coverage;Tests
 //CMAKE_INSTALL_PREFIX during last run
 _GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=/home/qq/MyGithub/BacASable/cmake/install
 

@@ -12,7 +12,5 @@ include(cmake/ProjectBootstrap.cmake)
 
 find_conan_package(mp-units REQUIRED)
 
-add_subdirectory(kinematics)       # Differential-drive kinematic model (library)
-add_subdirectory(odometry)         # Dead-reckoning pose estimation (library)
-add_subdirectory(robot_controller) # Robot control logic (library)
-add_subdirectory(application)      # Main application (executable)
+add_subdirectory(robot)          # Kinematics, odometry, robot_controller (libraries)
+add_subdirectory(application)    # Main application (executable)

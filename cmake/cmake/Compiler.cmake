@@ -81,6 +81,21 @@ string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g3 -ggdb")
 
 
 ###############################################################################
+# libstdc++ debug assertions (GCC only, Debug configuration)
+#
+# _GLIBCXX_ASSERTIONS enables extra run-time checks in libstdc++ when building
+# with configuration Debug (single- or multi-config generators).
+# See: https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_macros.html
+###############################################################################
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_definitions($<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>)
+    message(STATUS "libstdc++ assertions: enabled for Debug (GCC)")
+    add_enabled_feature("GLIBCXX_ASSERTIONS")
+endif()
+
+
+###############################################################################
 # Set compiler warnings to a target (GCC / Clang, Linux) for all builds (Debug
 # and Release). Note: Flags are PRIVATE so they don't propagate to consumers.
 #

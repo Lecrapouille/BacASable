@@ -1,10 +1,11 @@
 // ==========================================================================
-// kinematics/pch/pch.hpp - Precompiled Header for kinematics module
+// robot/pch/pch.hpp - Shared precompiled header for robot libraries
 // ==========================================================================
 #pragma once
 
-// Global PCH (STL headers)
 #include "global_pch.hpp"
 
-// mp-units SI library (heavy template headers)
 #include <mp-units/systems/si.h>
+
+#include <cmath>
+#include <iomanip>
