@@ -10,6 +10,10 @@
 #
 ###############################################################################
 
+# File extensions for automatic source discovery
+set(_MODULE_HEADER_EXTENSIONS "h;hpp")
+set(_MODULE_SOURCE_EXTENSIONS "c;cpp")
+
 ###############################################################################
 # _module_glob(<out_var> <base> <subdirs> <dir> <exts>)
 #
@@ -18,8 +22,8 @@
 # <base>/<dir>/<s>/ for each item <s> in <subdirs>.
 #
 # Examples:
-#   _module_glob(_src  "${base}" "${ARG_SUBDIRECTORIES}" src     "c;cpp")
-#   _module_glob(_hdrs "${base}" "${ARG_SUBDIRECTORIES}" include "h;hpp")
+#   _module_glob(_src  "${base}" "${ARG_SUBDIRECTORIES}" src     "${_MODULE_SOURCE_EXTENSIONS}")
+#   _module_glob(_hdrs "${base}" "${ARG_SUBDIRECTORIES}" include "${_MODULE_HEADER_EXTENSIONS}")
 ###############################################################################
 
 function(_module_glob out base subdirs dir extensions)
@@ -189,7 +193,7 @@ function(_module_add_gtest_target name)
     cmake_parse_arguments(ARG "" "${_single_values}" "${_multi_values}" ${ARGN})
 
     set(_base "${CMAKE_CURRENT_SOURCE_DIR}")
-    _module_glob(_test_sources "${_base}" "${ARG_SUBDIRECTORIES}" tests "c;cpp")
+    _module_glob(_test_sources "${_base}" "${ARG_SUBDIRECTORIES}" tests "${_MODULE_SOURCE_EXTENSIONS}")
 
     if(NOT _test_sources)
         if(NOT ARG_SUBDIRECTORIES)
@@ -246,10 +250,15 @@ endfunction()
 #                    [PUBLIC_DEPENDENCIES dep1 dep2 ...]
 #                    [PRIVATE_DEPENDENCIES dep1 dep2 ...]
 #                    [TEST_DEPENDENCIES dep1 dep2 ...]
-#                    [SUBDIRECTORIES s1 [s2 ...]])
+#                    [SUBDIRECTORIES s1 [s2 ...]]
+#                    [SOURCES src1 [src2 ...]])
 #
 # Create a static or shared library module with automatic source discovery,
 # testing, mock library creation and installation.
+#
+# Source discovery modes (mutually exclusive):
+#   - SUBDIRECTORIES: Glob sources in src/<s>/ and headers in include/<s>/
+#   - SOURCES: Explicit list of source files (no globbing)
 #
 # This function:
 #   1. Discovers sources in src/ (or src/<s>/ when SUBDIRECTORIES is set) and
@@ -299,11 +308,17 @@ function(add_module_library TargetName)
         TEST_DEPENDENCIES
         COMPILE_OPTIONS
         SUBDIRECTORIES
+        SOURCES
     )
     cmake_parse_arguments(ARG "${_options}" "${_single_values}" "${_multi_values}" ${ARGN})
 
     if(ARG_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "add_module_library: Invalid argument(s): ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
+
+    # Validate mutually exclusive options
+    if(ARG_SUBDIRECTORIES AND ARG_SOURCES)
+        message(FATAL_ERROR "add_module_library(${TargetName}): SUBDIRECTORIES and SOURCES are mutually exclusive")
     endif()
 
     # Set library type and label
@@ -328,12 +343,27 @@ function(add_module_library TargetName)
 
     # Discover sources and headers
     set(_base "${CMAKE_CURRENT_SOURCE_DIR}")
-    _module_glob(_headers_public  "${_base}" "${ARG_SUBDIRECTORIES}" include "h;hpp")
-    _module_glob(_headers_private "${_base}" "${ARG_SUBDIRECTORIES}" src    "h;hpp")
-    _module_glob(_sources         "${_base}" "${ARG_SUBDIRECTORIES}" src    "c;cpp")
+
+    if(ARG_SOURCES)
+        # Explicit source list provided
+        set(_sources ${ARG_SOURCES})
+        set(_headers_public)
+        set(_headers_private)
+        # Glob headers only (sources are explicit)
+        _module_glob(_headers_public  "${_base}" "" include "${_MODULE_HEADER_EXTENSIONS}")
+        _module_glob(_headers_private "${_base}" "" src     "${_MODULE_HEADER_EXTENSIONS}")
+    else()
+        # Automatic source discovery via globbing
+        _module_glob(_headers_public  "${_base}" "${ARG_SUBDIRECTORIES}" include "${_MODULE_HEADER_EXTENSIONS}")
+        _module_glob(_headers_private "${_base}" "${ARG_SUBDIRECTORIES}" src     "${_MODULE_HEADER_EXTENSIONS}")
+        _module_glob(_sources         "${_base}" "${ARG_SUBDIRECTORIES}" src     "${_MODULE_SOURCE_EXTENSIONS}")
+    endif()
 
     if(NOT _sources)
-        if(NOT ARG_SUBDIRECTORIES)
+        if(ARG_SOURCES)
+            message(FATAL_ERROR
+                "add_module_library(${TargetName}): SOURCES list is empty")
+        elseif(NOT ARG_SUBDIRECTORIES)
             message(FATAL_ERROR
                 "add_module_library(${TargetName}): No sources under ${_base}/src/")
         else()
@@ -363,7 +393,7 @@ function(add_module_library TargetName)
     # Create mock library (only when BUILD_TESTING is ON)
     set(_all_targets ${TargetName})
     if(BUILD_TESTING AND EXISTS "${_base}/mock")
-        _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mock "c;cpp")
+        _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mock "${_MODULE_SOURCE_EXTENSIONS}")
         if(_mock_sources)
             set(_mock_target ${TargetName}_mock)
             add_library(${_mock_target} STATIC ${_headers_public} ${_mock_sources})
@@ -480,9 +510,14 @@ endfunction()
 #                       [COMPILE_OPTIONS opt1 opt2 ...]
 #                       [DEPENDENCIES dep1 dep2 ...]
 #                       [TEST_DEPENDENCIES dep1 dep2 ...]
-#                       [SUBDIRECTORIES s1 [s2 ...]])
+#                       [SUBDIRECTORIES s1 [s2 ...]]
+#                       [SOURCES src1 [src2 ...]])
 #
 # Create an executable module with automatic source discovery and testing.
+#
+# Source discovery modes (mutually exclusive):
+#   - SUBDIRECTORIES: Glob sources in src/<s>/ and headers in include/<s>/
+#   - SOURCES: Explicit list of source files (no globbing)
 #
 # This function:
 #   1. Discovers sources in src/ (or src/<s>/ when SUBDIRECTORIES is set)
@@ -514,10 +549,15 @@ function(add_module_executable TargetName)
     # Parse arguments
     set(_options       NO_INSTALL)
     set(_single_values PCH VERSION)
-    set(_multi_values  DEPENDENCIES TEST_DEPENDENCIES COMPILE_OPTIONS SUBDIRECTORIES)
+    set(_multi_values  DEPENDENCIES TEST_DEPENDENCIES COMPILE_OPTIONS SUBDIRECTORIES SOURCES)
     cmake_parse_arguments(ARG "${_options}" "${_single_values}" "${_multi_values}" ${ARGN})
     if(ARG_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "add_module_executable: Invalid argument(s): ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
+
+    # Validate mutually exclusive options
+    if(ARG_SUBDIRECTORIES AND ARG_SOURCES)
+        message(FATAL_ERROR "add_module_executable(${TargetName}): SUBDIRECTORIES and SOURCES are mutually exclusive")
     endif()
 
     # Set private dependencies (includes Backward if present)
@@ -541,13 +581,26 @@ function(add_module_executable TargetName)
 
     # Source and header discovery
     set(_base "${CMAKE_CURRENT_SOURCE_DIR}")
-    _module_glob(_headers_include "${_base}" "${ARG_SUBDIRECTORIES}" include "h;hpp")
-    _module_glob(_headers_src     "${_base}" "${ARG_SUBDIRECTORIES}" src    "h;hpp")
-    _module_glob(_sources         "${_base}" "${ARG_SUBDIRECTORIES}" src    "c;cpp")
+
+    if(ARG_SOURCES)
+        # Explicit source list provided
+        set(_sources ${ARG_SOURCES})
+        # Glob headers only (sources are explicit)
+        _module_glob(_headers_include "${_base}" "" include "${_MODULE_HEADER_EXTENSIONS}")
+        _module_glob(_headers_src     "${_base}" "" src     "${_MODULE_HEADER_EXTENSIONS}")
+    else()
+        # Automatic source discovery via globbing
+        _module_glob(_headers_include "${_base}" "${ARG_SUBDIRECTORIES}" include "${_MODULE_HEADER_EXTENSIONS}")
+        _module_glob(_headers_src     "${_base}" "${ARG_SUBDIRECTORIES}" src     "${_MODULE_HEADER_EXTENSIONS}")
+        _module_glob(_sources         "${_base}" "${ARG_SUBDIRECTORIES}" src     "${_MODULE_SOURCE_EXTENSIONS}")
+    endif()
     set(_headers ${_headers_include} ${_headers_src})
 
     if(NOT _sources)
-        if(NOT ARG_SUBDIRECTORIES)
+        if(ARG_SOURCES)
+            message(FATAL_ERROR
+                "add_module_executable(${TargetName}): SOURCES list is empty")
+        elseif(NOT ARG_SUBDIRECTORIES)
             message(FATAL_ERROR
                 "add_module_executable(${TargetName}): No sources under ${_base}/src/")
         else()
@@ -632,7 +685,11 @@ function(add_module_executable TargetName)
         endif()
 
         # Discover app sources so tests can link application logic
-        _module_glob(_app_sources "${_base}" "${ARG_SUBDIRECTORIES}" src "c;cpp")
+        if(ARG_SOURCES)
+            set(_app_sources ${ARG_SOURCES})
+        else()
+            _module_glob(_app_sources "${_base}" "${ARG_SUBDIRECTORIES}" src "${_MODULE_SOURCE_EXTENSIONS}")
+        endif()
         _module_add_gtest_target(${TargetName}
             DEPENDENCIES   ${_test_dependencies}
             SUBDIRECTORIES ${ARG_SUBDIRECTORIES}

@@ -295,9 +295,15 @@ function(target_configure_pch target_name)
 
     if(ARG_PCH)
         # Custom PCH: compile a dedicated PCH for this target
-        set(_pch_path "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_PCH}")
+        # Support both relative and absolute paths
+        if(IS_ABSOLUTE "${ARG_PCH}")
+            set(_pch_path "${ARG_PCH}")
+        else()
+            set(_pch_path "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_PCH}")
+        endif()
         if(NOT EXISTS "${_pch_path}")
-            message(FATAL_ERROR "target_configure_pch: PCH file not found: ${_pch_path}")
+            message(FATAL_ERROR "target_configure_pch: PCH file not found: ${_pch_path}\n"
+                "  Hint: Path is relative to CMAKE_CURRENT_SOURCE_DIR (${CMAKE_CURRENT_SOURCE_DIR})")
         endif()
 
         # Ensure global PCH directory exists (for potential inclusion)

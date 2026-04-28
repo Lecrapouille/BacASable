@@ -253,6 +253,7 @@ add_module_library(<name>
     [PRIVATE_DEPENDENCIES <dep1> <dep2> ...]
     [TEST_DEPENDENCIES <dep1> <dep2> ...]
     [SUBDIRECTORIES <s1> [<s2> ...]]
+    [SOURCES <src1> [<src2> ...]]
 )
 ```
 
@@ -264,16 +265,17 @@ add_module_library(<name>
 | `SHARED` | flag | No | Create a shared library (`.so`) instead of static (`.a`). Configures RPATH automatically. |
 | `NO_INSTALL` | flag | No | Skip installation rules for this target. |
 | `VERSION` | single value | No | Library version (sets `VERSION` and `SOVERSION` properties). |
-| `PCH` | single value | No | Path to a custom PCH header relative to the module directory (e.g., `pch/pch.hpp`). Replaces the global PCH for this target. |
+| `PCH` | single value | No | Path to a custom PCH header (relative to module directory or absolute). Replaces the global PCH for this target. |
 | `COMPILE_OPTIONS` | list | No | Extra compile flags for this target only (e.g., `-Wno-conversion` to suppress a warning). |
 | `PUBLIC_DEPENDENCIES` | list | No | Libraries linked with `PUBLIC` visibility. Propagated to consumers of this library. |
 | `PRIVATE_DEPENDENCIES` | list | No | Libraries linked with `PRIVATE` visibility. Used only internally. |
 | `TEST_DEPENDENCIES` | list | No | Additional libraries linked to the `<name>_tests` test executable. |
-| `SUBDIRECTORIES` | list | No | If set, restricts discovery to `include/<s>/`, `src/<s>/`, `tests/<s>/`, and `mock/<s>/` for each name `s` in the list (still recursive under those roots). If omitted, the whole `include/`, `src/`, `tests/`, and `mock/` trees are used. |
+| `SUBDIRECTORIES` | list | No | If set, restricts discovery to `include/<s>/`, `src/<s>/`, `tests/<s>/`, and `mock/<s>/` for each name `s` in the list (still recursive under those roots). If omitted, the whole `include/`, `src/`, `tests/`, and `mock/` trees are used. **Mutually exclusive with `SOURCES`.** |
+| `SOURCES` | list | No | Explicit list of source files to compile (no globbing). Headers are still discovered automatically. **Mutually exclusive with `SUBDIRECTORIES`.** |
 
 #### Automatic Behaviors
 
-- **Source discovery**: Globs `src/**/*.cpp`, `src/**/*.c`, `include/**/*.hpp`, `include/**/*.h`, and the same extensions under `src/` for private headers, with `CONFIGURE_DEPENDS`.
+- **Source discovery**: By default, globs `src/**/*.cpp`, `src/**/*.c`, `include/**/*.hpp`, `include/**/*.h`, and the same extensions under `src/` for private headers, with `CONFIGURE_DEPENDS`. When `SOURCES` is specified, uses the explicit file list instead (headers are still discovered automatically).
 - **Library type**: Creates a `STATIC` library by default, or `SHARED` if the flag is provided.
 - **RPATH (shared only)**: Configures `$ORIGIN/../lib` RPATH so executables find the `.so` at runtime.
 - **Alias target**: Creates `${PROJECT_NAME}::<name>` alias for safe usage in `target_link_libraries()`.
@@ -319,6 +321,15 @@ add_module_library(mysharedlib
     SHARED
     PUBLIC_DEPENDENCIES SomeLib::SomeLib
 )
+
+# Explicit source list (no globbing) - mutually exclusive with SUBDIRECTORIES
+add_module_library(mylib
+    SOURCES
+        src/file1.cpp
+        src/file2.cpp
+        src/utils/helper.cpp
+    PUBLIC_DEPENDENCIES SomeLib::SomeLib
+)
 ```
 
 ### `add_module_executable()`
@@ -334,6 +345,7 @@ add_module_executable(<name>
     [DEPENDENCIES <dep1> <dep2> ...]
     [TEST_DEPENDENCIES <dep1> <dep2> ...]
     [SUBDIRECTORIES <s1> [<s2> ...]]
+    [SOURCES <src1> [<src2> ...]]
 )
 ```
 
@@ -344,15 +356,16 @@ add_module_executable(<name>
 | `<name>` | positional | **Yes** | Name of the executable target |
 | `NO_INSTALL` | flag | No | Skip installation rules and runtime dependency deployment. |
 | `VERSION` | single value | No | Version metadata for the executable. |
-| `PCH` | single value | No | Path to a custom PCH header relative to the module directory (e.g., `pch/pch.hpp`). Replaces the global PCH for this target. |
+| `PCH` | single value | No | Path to a custom PCH header (relative to module directory or absolute). Replaces the global PCH for this target. |
 | `COMPILE_OPTIONS` | list | No | Extra compile flags for this target only (e.g., `-Wno-shadow`). |
 | `DEPENDENCIES` | list | No | Libraries linked with `PRIVATE` visibility. |
 | `TEST_DEPENDENCIES` | list | No | Libraries for tests (overrides `DEPENDENCIES` for mock injection). Falls back to `DEPENDENCIES` if not specified. |
-| `SUBDIRECTORIES` | list | No | Same meaning as for `add_module_library()` for `include/`, `src/`, and `tests/`. |
+| `SUBDIRECTORIES` | list | No | Same meaning as for `add_module_library()` for `include/`, `src/`, and `tests/`. **Mutually exclusive with `SOURCES`.** |
+| `SOURCES` | list | No | Explicit list of source files to compile (no globbing). Headers are still discovered automatically. **Mutually exclusive with `SUBDIRECTORIES`.** |
 
 #### Automatic Behaviors
 
-- **Source discovery**: Globs `*.c`, `*.cpp`, `*.h`, `*.hpp` under `include/` and `src/` (either whole trees or per `SUBDIRECTORIES` entry).
+- **Source discovery**: By default, globs `*.c`, `*.cpp`, `*.h`, `*.hpp` under `include/` and `src/` (either whole trees or per `SUBDIRECTORIES` entry). When `SOURCES` is specified, uses the explicit file list instead (headers are still discovered automatically).
 - **Include directories**: Both `include/` and `src/` are `PRIVATE`.
 - **Compiler warnings**: Applies strict warnings via `target_set_warnings()`.
 - **GNU + Debug**: Same global `_GLIBCXX_ASSERTIONS` in **Debug** for **GCC** as for libraries (see [`Compiler.cmake`](cmake/Compiler.cmake)).
@@ -363,7 +376,7 @@ add_module_executable(<name>
 - **Installation**: Installs to `bin/` under component `runtime` (unless `NO_INSTALL`). Automatically deploys runtime shared library dependencies to `lib/`.
 - **Tests**: Creates `<name>_tests` if `BUILD_TESTING` is `ON` and test sources exist. The test executable recompiles all `src/` sources **except** `main.cpp` / `main.c`, allowing you to test application logic without the entry point.
 
-#### Example
+#### Examples
 
 ```cmake
 # Demo executable (see application/CMakeLists.txt)
@@ -372,6 +385,14 @@ add_module_executable(application
     PCH pch/pch.hpp
     DEPENDENCIES      robot_controller
     TEST_DEPENDENCIES robot_controller_mock
+)
+
+# Explicit source list (no globbing) - mutually exclusive with SUBDIRECTORIES
+add_module_executable(mytool
+    SOURCES
+        src/main.cpp
+        src/commands.cpp
+    DEPENDENCIES SomeLib::SomeLib
 )
 ```
 
