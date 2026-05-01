@@ -241,7 +241,7 @@ endfunction()
 
 
 ###############################################################################
-# add_module_library(<TargetName>
+# library(<TargetName>
 #                    [SHARED]
 #                    [NO_INSTALL]
 #                    [VERSION <version>]
@@ -274,12 +274,12 @@ endfunction()
 #   ├── CMakeLists.txt
 #   ├── include/<module>/   # Public headers (or include/<s>/ with SUBDIRECTORIES)
 #   ├── src/                # Implementation + private headers
-#   ├── mock/               # Mock implementations (optional)
+#   ├── mocks/              # Mock implementations (optional)
 #   ├── pch/pch.hpp         # Custom PCH (optional)
 #   └── tests/              # Unit tests (optional)
 #
 # Example (flat layout):
-#   add_module_library(database
+#   library(database
 #       VERSION 1.2.0
 #       PCH pch/pch.hpp
 #       COMPILE_OPTIONS -Wno-conversion
@@ -289,7 +289,7 @@ endfunction()
 #   )
 #
 # Example (multi-subdirectory layout):
-#   add_module_library(kinematics
+#   library(kinematics
 #       VERSION 0.1.0
 #       SUBDIRECTORIES kinematics
 #       PCH pch/pch.hpp
@@ -297,7 +297,7 @@ endfunction()
 #   )
 ###############################################################################
 
-function(add_module_library TargetName)
+function(library TargetName)
 
     # Parse arguments
     set(_options       NO_INSTALL SHARED)
@@ -392,13 +392,13 @@ function(add_module_library TargetName)
 
     # Create mock library (only when BUILD_TESTING is ON)
     set(_all_targets ${TargetName})
-    if(BUILD_TESTING AND EXISTS "${_base}/mock")
-        _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mock "${_MODULE_SOURCE_EXTENSIONS}")
+    if(BUILD_TESTING AND EXISTS "${_base}/mocks")
+        _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mocks "${_MODULE_SOURCE_EXTENSIONS}")
         if(_mock_sources)
             set(_mock_target ${TargetName}_mock)
             add_library(${_mock_target} STATIC ${_headers_public} ${_mock_sources})
             target_include_directories(${_mock_target} PUBLIC
-                $<BUILD_INTERFACE:${_base}/mock>
+                $<BUILD_INTERFACE:${_base}/mocks>
             )
             target_link_libraries(${_mock_target} PUBLIC GTest::gmock)
             list(APPEND _all_targets ${_mock_target})
@@ -503,17 +503,17 @@ endfunction()
 
 
 ###############################################################################
-# add_module_executable(<TargetName>
-#                       [NO_INSTALL]
-#                       [VERSION <version>]
-#                       [PCH <path>]
-#                       [COMPILE_OPTIONS opt1 opt2 ...]
-#                       [DEPENDENCIES dep1 dep2 ...]
-#                       [TEST_DEPENDENCIES dep1 dep2 ...]
-#                       [SUBDIRECTORIES s1 [s2 ...]]
-#                       [SOURCES src1 [src2 ...]])
+# executable(<TargetName>
+#            [NO_INSTALL]
+#            [VERSION <version>]
+#            [PCH <path>]
+#            [COMPILE_OPTIONS opt1 opt2 ...]
+#            [DEPENDENCIES dep1 dep2 ...]
+#            [TEST_DEPENDENCIES dep1 dep2 ...]
+#            [SUBDIRECTORIES s1 [s2 ...]]
+#            [SOURCES src1 [src2 ...]])
 #
-# Create an executable module with automatic source discovery and testing.
+# Create an executable with automatic source discovery and testing.
 #
 # Source discovery modes (mutually exclusive):
 #   - SUBDIRECTORIES: Glob sources in src/<s>/ and headers in include/<s>/
@@ -535,7 +535,7 @@ endfunction()
 #     application logic can be tested without an entry-point conflict.
 #
 # Example:
-#   add_module_executable(bar
+#   executable(bar
 #       VERSION 2.0.0
 #       PCH pch/pch.hpp
 #       COMPILE_OPTIONS -Wno-shadow
@@ -544,7 +544,7 @@ endfunction()
 #   )
 ###############################################################################
 
-function(add_module_executable TargetName)
+function(executable TargetName)
 
     # Parse arguments
     set(_options       NO_INSTALL)
@@ -684,12 +684,15 @@ function(add_module_executable TargetName)
             set(_test_dependencies ${ARG_DEPENDENCIES})
         endif()
 
-        # Discover app sources so tests can link application logic
+        # Discover app sources so tests can link application logic.
+        # main.cpp is excluded: it defines main() which would conflict with
+        # GTest::gtest_main's entry point.
         if(ARG_SOURCES)
             set(_app_sources ${ARG_SOURCES})
         else()
             _module_glob(_app_sources "${_base}" "${ARG_SUBDIRECTORIES}" src "${_MODULE_SOURCE_EXTENSIONS}")
         endif()
+        list(FILTER _app_sources EXCLUDE REGEX ".*/main\\.cpp$")
         _module_add_gtest_target(${TargetName}
             DEPENDENCIES   ${_test_dependencies}
             SUBDIRECTORIES ${ARG_SUBDIRECTORIES}

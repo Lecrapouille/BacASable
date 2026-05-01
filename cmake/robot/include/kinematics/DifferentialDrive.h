@@ -1,5 +1,4 @@
-#ifndef KINEMATICS_DIFFERENTIAL_DRIVE_H
-#define KINEMATICS_DIFFERENTIAL_DRIVE_H
+#pragma once
 
 #include <mp-units/systems/si.h>
 
@@ -14,12 +13,16 @@ using AngularVelocity = mp_units::quantity<mp_units::si::radian  / mp_units::si:
 struct WheelVelocities {
     AngularVelocity left;   ///< Left wheel angular velocity  (rad/s)
     AngularVelocity right;  ///< Right wheel angular velocity (rad/s)
+
+    friend bool operator==(const WheelVelocities&, const WheelVelocities&) = default;
 };
 
 /// Twist command: linear and angular velocity in the robot body frame.
 struct Twist {
     LinearVelocity  linear;   ///< Forward velocity (m/s)
     AngularVelocity angular;  ///< Rotation rate    (rad/s)
+
+    friend bool operator==(const Twist&, const Twist&) = default;
 };
 
 /**
@@ -69,5 +72,3 @@ private:
 };
 
 } // namespace kinematics
-
-#endif // KINEMATICS_DIFFERENTIAL_DRIVE_H

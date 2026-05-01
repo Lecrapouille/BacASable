@@ -1,5 +1,4 @@
-#include "odometry/WheelOdometry.h"
-#include "odometry/WheelOdometryMock.h"
+#include "WheelOdometryMock.h"
 
 namespace odometry {
 
@@ -16,14 +15,14 @@ WheelOdometry::WheelOdometry(Length wheel_radius,
 
 void WheelOdometry::update(int delta_left_ticks, int delta_right_ticks)
 {
-    if (WheelOdometryMock::current)
-        WheelOdometryMock::current->update(delta_left_ticks, delta_right_ticks);
+    if (auto* m = WheelOdometryMock::mock())
+        m->update(delta_left_ticks, delta_right_ticks);
 }
 
 void WheelOdometry::reset(const Pose2D& pose)
 {
-    if (WheelOdometryMock::current)
-        WheelOdometryMock::current->reset(pose);
+    if (auto* m = WheelOdometryMock::mock())
+        m->reset(pose);
     pose_ = pose;
 }
 

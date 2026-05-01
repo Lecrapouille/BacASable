@@ -1,5 +1,4 @@
-#include "robot_controller/RobotController.h"
-#include "robot_controller/RobotControllerMock.h"
+#include "RobotControllerMock.h"
 
 namespace robot_controller {
 
@@ -17,23 +16,23 @@ RobotController::RobotController(kinematics::Length wheel_radius,
 
 void RobotController::step(const kinematics::Twist& twist)
 {
-    if (RobotControllerMock::current) {
-        RobotControllerMock::current->step(twist);
+    if (auto* m = RobotControllerMock::mock()) {
+        m->step(twist);
         return;
     }
 }
 
 const odometry::Pose2D& RobotController::pose() const
 {
-    if (RobotControllerMock::current)
-        return RobotControllerMock::current->pose();
+    if (auto* m = RobotControllerMock::mock())
+        return m->pose();
     return odom_.pose();
 }
 
 void RobotController::reset_pose(const odometry::Pose2D& pose)
 {
-    if (RobotControllerMock::current) {
-        RobotControllerMock::current->reset_pose(pose);
+    if (auto* m = RobotControllerMock::mock()) {
+        m->reset_pose(pose);
         return;
     }
     odom_.reset(pose);

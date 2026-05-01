@@ -1,6 +1,6 @@
 # 🏗️ CMake C++ Infrastructure
 
-A reusable CMake infrastructure for C++ multi-module projects. It provides high-level functions to declare libraries and executables with automatic source discovery, strict compiler warnings, precompiled headers, sanitizers, code coverage, doxygen, stack trace (backward-cpp), unit tests (GoogleTest) and more. Dependencies are managed via Conan. Two single functions do the all job `add_module_library()`, `add_module_executable()`.
+A reusable CMake infrastructure for C++ multi-module projects. It provides high-level functions to declare libraries and executables with automatic source discovery, strict compiler warnings, precompiled headers, sanitizers, code coverage, doxygen, stack trace (backward-cpp), unit tests (GoogleTest) and more. Dependencies are managed via Conan. Two single functions do all the work: `library()`, `executable()`.
 
 This infrastructure expects each module to follow a standard directory layout (sources and headers are discovered as `*.c`, `*.cpp`, `*.h`, `*.hpp` only):
 
@@ -9,13 +9,13 @@ This infrastructure expects each module to follow a standard directory layout (s
 ├── CMakeLists.txt
 ├── include/<module>/   # Public headers (or include/<subdir>/ when using SUBDIRECTORIES)
 ├── src/                # Sources and private headers
-├── mock/               # Mock implementations (optional)
+├── mocks/              # Mock implementations (optional)
 ├── pch/                # Custom precompiled header (optional)
 │   └── pch.hpp
 └── tests/              # GoogleTest unit tests (optional)
 ```
 
-The demo libraries (`kinematics`, `odometry`, `robot_controller`) live under [`robot/`](robot/) in a **multi-subdirectory** layout (`include/<name>/`, `src/<name>/`, …) with one `add_module_library()` call per target and the `SUBDIRECTORIES` keyword. They are **examples only**. The demo uses [mp-units](https://mpusz.github.io/mp-units/) for SI unit handling (velocities in m/s, rad/s) installed from Conan.
+The demo libraries (`kinematics`, `odometry`, `robot_controller`) live under [`robot/`](robot/) in a **multi-subdirectory** layout (`include/<name>/`, `src/<name>/`, …) with one `library()` call per target and the `SUBDIRECTORIES` keyword. They are **examples only**. The demo uses [mp-units](https://mpusz.github.io/mp-units/) for SI unit handling (velocities in m/s, rad/s) installed from Conan.
 
 ---
 
@@ -25,7 +25,7 @@ All infrastructure files live in the `cmake/` directory. Include `ProjectBootstr
 
 | File | Purpose |
 |------|---------|
-| `Module.cmake` | Main API: `add_module_library()`, `add_module_executable()`, and private `_module_*` helpers (glob, banner, configure, gtest). |
+| `Module.cmake` | Main API: `library()`, `executable()`, and private `_module_*` helpers (glob, banner, configure, gtest). |
 | `Conan.cmake` | Conan 2.x integration. Provides `find_conan_package()` wrapper. |
 | `Compiler.cmake` | Default build type, PIC, LTO, debug flags, `target_set_warnings()`. |
 | `PCH.cmake` | Precompiled headers: global auto-generated PCH and custom per-module PCH support. |
@@ -174,7 +174,7 @@ By default, `cmake --install build` deploys to the local `install/` directory (s
 - Public headers to `install/include/`
 - Runtime shared library dependencies to `install/lib/` (auto-deployed for executables)
 - Debug symbols to `.debug/` subdirectories (Debug/RelWithDebInfo builds only)
-- Use `NO_INSTALL` flag in `add_module_library()` or `add_module_executable()` to exclude a target from installation.
+- Use `NO_INSTALL` flag in `library()` or `executable()` to exclude a target from installation.
 
 For a full installation, you have to override the install location:
 
@@ -221,8 +221,8 @@ Targets are automatically assigned to components based on their type:
 
 | Component | Contents | Created by |
 |-----------|----------|------------|
-| `runtime` | Executables + runtime shared library dependencies | `add_module_executable()` |
-| `devel` | Libraries (`.a` / `.so`) and public headers | `add_module_library()` |
+| `runtime` | Executables + runtime shared library dependencies | `executable()` |
+| `devel` | Libraries (`.a` / `.so`) and public headers | `library()` |
 
 This allows installing only what you need:
 
@@ -236,14 +236,154 @@ cmake --install build --component devel
 
 ---
 
-## 📖 API Reference
+---
 
-### `add_module_library()`
+## 🧪 Mock System
 
-Creates a library module (static or shared) with automatic source discovery, compiler warnings, PCH, and unit tests.
+The infrastructure provides a first-class mock system that works **without virtual functions**, **without `#define`/`#undef` tricks**, and **without touching the real headers**. It is based on the *delegate-to-static-singleton* pattern.
+
+### How It Works
+
+Each mockable library `foo` has three files:
+
+```cpp
+include/foo/Foo.h          ← Real class declaration (unchanged in tests)
+mocks/foo/FooMock.h        ← GoogleMock struct mirroring Foo's public API
+mocks/foo/FooMock.cpp      ← Bridge: implements the real class, delegates to the mock
+```
+
+**Real header** — untouched, declares the production class with non-virtual methods:
+
+```cpp
+// include/kinematics/DifferentialDrive.h
+class DifferentialDrive {
+public:
+    WheelVelocities twist_to_wheels(const Twist&) const;
+    Twist           wheels_to_twist(const WheelVelocities&) const;
+};
+```
+
+**Mock header** — a separate struct with `MOCK_METHOD` and a static singleton:
+
+```cpp
+// mocks/kinematics/DifferentialDriveMock.h
+struct DifferentialDriveMock {
+    DifferentialDriveMock()  { instance_ = this; }   // RAII registration
+    ~DifferentialDriveMock() { instance_ = nullptr; }
+
+    MOCK_METHOD(WheelVelocities, twist_to_wheels, (const Twist&), (const));
+    MOCK_METHOD(Twist, wheels_to_twist, (const WheelVelocities&), (const));
+
+    static DifferentialDriveMock* mock() { return instance_; }
+private:
+    static inline DifferentialDriveMock* instance_ = nullptr;
+};
+```
+
+**Bridge `.cpp`** — implements the real class's methods, forwards to the mock when active:
+
+```cpp
+// mocks/kinematics/DifferentialDriveMock.cpp
+#include "DifferentialDriveMock.h"   // already includes DifferentialDrive.h
+
+WheelVelocities DifferentialDrive::twist_to_wheels(const Twist& twist) const {
+    if (auto* m = DifferentialDriveMock::mock())
+        return m->twist_to_wheels(twist);
+    return {};   // fallback when no mock is active
+}
+```
+
+### CMake Integration
+
+`library()` automatically discovers `mocks/` and creates a `<name>_mock` static library:
+
+```
+kinematics        ← production lib  (src/kinematics/*.cpp)
+kinematics_mock   ← mock bridge lib (mocks/kinematics/DifferentialDriveMock.cpp)
+```
+
+The mock lib exposes the `mocks/` directory as a public include root, so tests can
+`#include "kinematics/DifferentialDriveMock.h"`.
+
+Executable tests use `TEST_DEPENDENCIES` to swap the real lib for the mock bridge:
 
 ```cmake
-add_module_library(<name>
+executable(application
+    DEPENDENCIES      robot_controller          # production build
+    TEST_DEPENDENCIES robot_controller_mock     # test build uses the bridge
+)
+```
+
+### Singleton Lifecycle
+
+Constructing a `*Mock` object activates the singleton (`instance_ = this`). Destroying it
+resets to `nullptr`. No `SetUp()`/`TearDown()` boilerplate is needed — just declare the
+mock as a fixture member and it is automatically active for the duration of each test:
+
+```cpp
+class MyTest : public ::testing::Test {
+    RobotControllerMock mock_;   // active from construction to destruction
+    RobotController     ctrl_{...};
+};
+```
+
+### Writing Tests with `EXPECT_CALL`
+
+```cpp
+// Exact argument matching (requires operator== on structs)
+TEST_F(MyTest, StepForwardsExactTwist) {
+    kinematics::Twist cmd{0.5 * (m/s), 0.3 * (rad/s)};
+    EXPECT_CALL(mock_, step(cmd)).Times(1);
+    ctrl_.step(cmd);
+}
+
+// Call-count verification
+TEST_F(MyTest, MultipleStepsAreCounted) {
+    EXPECT_CALL(mock_, step(::testing::_)).Times(10);
+    for (int i = 0; i < 10; ++i) ctrl_.step({});
+}
+
+// Return-value injection
+TEST_F(MyTest, PoseReturnsMockedValue) {
+    static const odometry::Pose2D expected{1.0 * m, 2.0 * m, 0.5 * rad};
+    EXPECT_CALL(mock_, pose()).WillOnce(::testing::ReturnRef(expected));
+    EXPECT_DOUBLE_EQ(ctrl_.pose().x.numerical_value_in(m), 1.0);
+}
+
+// Call-order enforcement
+TEST_F(MyTest, StepBeforePose) {
+    static const odometry::Pose2D after{0.5 * m, 0.0 * m, 0.0 * rad};
+    ::testing::InSequence seq;
+    EXPECT_CALL(mock_, step(::testing::_));
+    EXPECT_CALL(mock_, pose()).WillOnce(::testing::ReturnRef(after));
+    ctrl_.step({0.5 * (m/s), 0.0 * (rad/s)});
+    ctrl_.pose();
+}
+```
+
+### Limitations and Trade-offs
+
+| Criterion | This pattern | Traditional virtual mock |
+|-----------|-------------|--------------------------|
+| No virtual functions required | ✓ | ✗ |
+| No `#define`/`#undef` tricks | ✓ | ✓ |
+| Inline methods in headers | ✗ (not interceptable) | ✓ |
+| Compiler catches missing bridge methods | ✓ (link error) | ✓ |
+| Compiler catches missing `MOCK_METHOD` | ✗ (silent) | ✓ |
+
+If a new method is added to the real class, the bridge `.cpp` will fail to link (missing
+symbol) — a hard compile-time safety net. The `*Mock.h` must be kept in sync manually.
+
+---
+
+## 📖 API Reference
+
+### `library()`
+
+Creates a library (static or shared) with automatic source discovery, compiler warnings, PCH, and unit tests.
+
+```cmake
+library(<name>
     [SHARED]
     [NO_INSTALL]
     [VERSION <version>]
@@ -270,7 +410,7 @@ add_module_library(<name>
 | `PUBLIC_DEPENDENCIES` | list | No | Libraries linked with `PUBLIC` visibility. Propagated to consumers of this library. |
 | `PRIVATE_DEPENDENCIES` | list | No | Libraries linked with `PRIVATE` visibility. Used only internally. |
 | `TEST_DEPENDENCIES` | list | No | Additional libraries linked to the `<name>_tests` test executable. |
-| `SUBDIRECTORIES` | list | No | If set, restricts discovery to `include/<s>/`, `src/<s>/`, `tests/<s>/`, and `mock/<s>/` for each name `s` in the list (still recursive under those roots). If omitted, the whole `include/`, `src/`, `tests/`, and `mock/` trees are used. **Mutually exclusive with `SOURCES`.** |
+| `SUBDIRECTORIES` | list | No | If set, restricts discovery to `include/<s>/`, `src/<s>/`, `tests/<s>/`, and `mocks/<s>/` for each name `s` in the list (still recursive under those roots). If omitted, the whole `include/`, `src/`, `tests/`, and `mocks/` trees are used. **Mutually exclusive with `SOURCES`.** |
 | `SOURCES` | list | No | Explicit list of source files to compile (no globbing). Headers are still discovered automatically. **Mutually exclusive with `SUBDIRECTORIES`.** |
 
 #### Automatic Behaviors
@@ -293,7 +433,7 @@ add_module_library(<name>
 
 ```cmake
 # Demo layout: one CMake folder, several libs under include/<lib>/, src/<lib>/ (see robot/CMakeLists.txt)
-add_module_library(kinematics
+library(kinematics
     VERSION 0.1.0
     SUBDIRECTORIES kinematics
     PCH pch/pch.hpp
@@ -302,7 +442,7 @@ add_module_library(kinematics
 )
 
 # Library with version and temporary warning suppression
-add_module_library(database
+library(database
     VERSION 1.2.0
     PCH
         pch/pch.hpp
@@ -317,13 +457,13 @@ add_module_library(database
 )
 
 # Shared library
-add_module_library(mysharedlib
+library(mysharedlib
     SHARED
     PUBLIC_DEPENDENCIES SomeLib::SomeLib
 )
 
 # Explicit source list (no globbing) - mutually exclusive with SUBDIRECTORIES
-add_module_library(mylib
+library(mylib
     SOURCES
         src/file1.cpp
         src/file2.cpp
@@ -332,12 +472,12 @@ add_module_library(mylib
 )
 ```
 
-### `add_module_executable()`
+### `executable()`
 
 Creates an executable module with automatic source discovery, compiler warnings, PCH, and optional unit tests.
 
 ```cmake
-add_module_executable(<name>
+executable(<name>
     [NO_INSTALL]
     [VERSION <version>]
     [PCH <path>]
@@ -360,7 +500,7 @@ add_module_executable(<name>
 | `COMPILE_OPTIONS` | list | No | Extra compile flags for this target only (e.g., `-Wno-shadow`). |
 | `DEPENDENCIES` | list | No | Libraries linked with `PRIVATE` visibility. |
 | `TEST_DEPENDENCIES` | list | No | Libraries for tests (overrides `DEPENDENCIES` for mock injection). Falls back to `DEPENDENCIES` if not specified. |
-| `SUBDIRECTORIES` | list | No | Same meaning as for `add_module_library()` for `include/`, `src/`, and `tests/`. **Mutually exclusive with `SOURCES`.** |
+| `SUBDIRECTORIES` | list | No | Same meaning as for `library()` for `include/`, `src/`, and `tests/`. **Mutually exclusive with `SOURCES`.** |
 | `SOURCES` | list | No | Explicit list of source files to compile (no globbing). Headers are still discovered automatically. **Mutually exclusive with `SUBDIRECTORIES`.** |
 
 #### Automatic Behaviors
@@ -380,7 +520,7 @@ add_module_executable(<name>
 
 ```cmake
 # Demo executable (see application/CMakeLists.txt)
-add_module_executable(application
+executable(application
     VERSION 1.0.0
     PCH pch/pch.hpp
     DEPENDENCIES      robot_controller
@@ -388,7 +528,7 @@ add_module_executable(application
 )
 
 # Explicit source list (no globbing) - mutually exclusive with SUBDIRECTORIES
-add_module_executable(mytool
+executable(mytool
     SOURCES
         src/main.cpp
         src/commands.cpp
@@ -448,7 +588,7 @@ The global PCH is compiled once and shared across all targets via CMake's `REUSE
 For modules that use heavy third-party headers (mp-units, Qt, Boost, etc.), you can specify a custom PCH:
 
 ```cmake
-add_module_library(mymodule
+library(mymodule
     PCH pch/pch.hpp
 )
 ```

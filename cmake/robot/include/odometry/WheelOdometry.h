@@ -1,5 +1,4 @@
-#ifndef ODOMETRY_WHEEL_ODOMETRY_H
-#define ODOMETRY_WHEEL_ODOMETRY_H
+#pragma once
 
 #include "odometry/Pose2D.h"
 
@@ -54,5 +53,3 @@ private:
 };
 
 } // namespace odometry
-
-#endif // ODOMETRY_WHEEL_ODOMETRY_H

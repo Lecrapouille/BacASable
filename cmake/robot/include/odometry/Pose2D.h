@@ -1,5 +1,4 @@
-#ifndef ODOMETRY_POSE2D_H
-#define ODOMETRY_POSE2D_H
+#pragma once
 
 #include <mp-units/systems/si.h>
 
@@ -15,6 +14,10 @@ struct Pose2D {
     Angle  theta;  ///< Heading angle, counter-clockwise from X axis
 };
 
+inline bool operator==(const Pose2D& a, const Pose2D& b) {
+    return a.x == b.x && a.y == b.y && a.theta == b.theta;
+}
+
 /// Convenience constant: pose at the world-frame origin with zero heading.
 inline constexpr Pose2D kOrigin{
     Length{0.0 * mp_units::si::metre},
@@ -23,5 +26,3 @@ inline constexpr Pose2D kOrigin{
 };
 
 } // namespace odometry
-
-#endif // ODOMETRY_POSE2D_H

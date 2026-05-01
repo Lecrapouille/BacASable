@@ -1,5 +1,4 @@
-#ifndef ROBOT_CONTROLLER_H
-#define ROBOT_CONTROLLER_H
+#pragma once
 
 #include "kinematics/DifferentialDrive.h"
 #include "odometry/WheelOdometry.h"
@@ -61,5 +60,3 @@ private:
 };
 
 } // namespace robot_controller
-
-#endif // ROBOT_CONTROLLER_H

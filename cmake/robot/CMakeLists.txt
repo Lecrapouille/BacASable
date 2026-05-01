@@ -1,6 +1,6 @@
 # robot - kinematics, odometry, and robot_controller (SUBDIRECTORIES layout)
 
-add_module_library(kinematics
+library(kinematics
     VERSION 0.1.0
     SUBDIRECTORIES kinematics
     PCH pch/pch.hpp
@@ -8,7 +8,7 @@ add_module_library(kinematics
         mp-units::mp-units
 )
 
-add_module_library(odometry
+library(odometry
     VERSION 0.1.0
     SUBDIRECTORIES odometry
     PCH pch/pch.hpp
@@ -17,7 +17,7 @@ add_module_library(odometry
         mp-units::mp-units
 )
 
-add_module_library(robot_controller
+library(robot_controller
     VERSION 0.1.0
     SUBDIRECTORIES robot_controller
     PCH pch/pch.hpp
