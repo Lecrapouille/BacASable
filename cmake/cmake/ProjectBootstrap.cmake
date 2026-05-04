@@ -49,6 +49,25 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(_ENABLED_FEATURES "" CACHE INTERNAL "List of enabled features for summary")
 
 ###############################################################################
+# Module configuration variables
+###############################################################################
+
+# File extensions for automatic source discovery
+set(_MODULE_HEADER_EXTENSIONS "h;hpp" CACHE STRING "Header file extensions")
+set(_MODULE_SOURCE_EXTENSIONS "c;cpp" CACHE STRING "Source file extensions")
+
+# Install component names
+set(_COMPONENT_DEV "Development" CACHE STRING "Install component for headers/libs")
+set(_COMPONENT_RUNTIME "Runtime" CACHE STRING "Install component for executables")
+
+# Test configuration
+set(TEST_DIR_NAME "tests" CACHE STRING "Directory name for unit tests")
+set(TEST_TARGET_SUFFIX "_tests" CACHE STRING "Suffix for test target names")
+
+# Export configuration
+set(EXPORT_NAMESPACE "${PROJECT_NAME}" CACHE STRING "Namespace for exported targets")
+
+###############################################################################
 # add_enabled_feature(<feature> [<feature> ...])
 #
 # Register one or more features for the configuration summary.

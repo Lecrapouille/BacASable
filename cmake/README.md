@@ -295,11 +295,11 @@ WheelVelocities DifferentialDrive::twist_to_wheels(const Twist& twist) const {
 
 ### CMake Integration
 
-`library()` automatically discovers `mocks/` and creates a `<name>_mock` static library:
+`library()` automatically discovers `mocks/` and creates a `mock_<name>` static library:
 
 ```
 kinematics        ← production lib  (src/kinematics/*.cpp)
-kinematics_mock   ← mock bridge lib (mocks/kinematics/DifferentialDriveMock.cpp)
+mock_kinematics   ← mock bridge lib (mocks/kinematics/DifferentialDriveMock.cpp)
 ```
 
 The mock lib exposes the `mocks/` directory as a public include root, so tests can
@@ -310,7 +310,7 @@ Executable tests use `TEST_DEPENDENCIES` to swap the real lib for the mock bridg
 ```cmake
 executable(application
     DEPENDENCIES      robot_controller          # production build
-    TEST_DEPENDENCIES robot_controller_mock     # test build uses the bridge
+    TEST_DEPENDENCIES mock_robot_controller     # test build uses the bridge
 )
 ```
 
@@ -524,7 +524,7 @@ executable(application
     VERSION 1.0.0
     PCH pch/pch.hpp
     DEPENDENCIES      robot_controller
-    TEST_DEPENDENCIES robot_controller_mock
+    TEST_DEPENDENCIES mock_robot_controller
 )
 
 # Explicit source list (no globbing) - mutually exclusive with SUBDIRECTORIES

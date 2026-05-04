@@ -28,6 +28,11 @@ if(ENABLE_STACKTRACE)
         message(STATUS "backward-cpp: Created alias Backward::Backward")
     endif()
 
+    # Warn if stacktrace was requested but target is unavailable
+    if(NOT TARGET Backward::Backward)
+        message(WARNING "ENABLE_STACKTRACE is ON but Backward::Backward target not found")
+    endif()
+
     # Generate stacktrace init source for Debug builds (registers signal handlers)
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated")
     set(_stacktrace_init "${CMAKE_BINARY_DIR}/generated/stacktrace_init.cpp")

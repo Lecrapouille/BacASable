@@ -22,6 +22,11 @@ define_property(GLOBAL PROPERTY PROJECT_MODULE_NAMES
     FULL_DOCS "Semicolon-separated"
 )
 
+define_property(GLOBAL PROPERTY PROJECT_MODULES_WITHOUT_TESTS
+    BRIEF_DOCS "List of modules without unit tests"
+    FULL_DOCS "Semicolon-separated list"
+)
+
 ###############################################################################
 # summary_register_module(<name> <type> <public_deps> <private_deps> [VERSION ver])
 #
@@ -41,6 +46,17 @@ function(summary_register_module name type public_deps private_deps)
     if(ARG_VERSION)
         set_property(GLOBAL PROPERTY "PROJECT_MODULE_${name}_VERSION" "${ARG_VERSION}")
     endif()
+endfunction()
+
+###############################################################################
+# summary_register_module_without_tests(<name>)
+#
+# Register a module that has no unit tests. Displayed in a summary box at
+# the end of configuration.
+###############################################################################
+
+function(summary_register_module_without_tests name)
+    set_property(GLOBAL APPEND PROPERTY PROJECT_MODULES_WITHOUT_TESTS "${name}")
 endfunction()
 
 ###############################################################################
@@ -85,6 +101,16 @@ function(_summary_print_deferred)
     _summary_generate_dot_graph(_dot_path)
     if(_dot_path)
         message(STATUS "Run: dot -Tpng ${_dot_path} -o dependencies.png")
+    endif()
+
+    # Modules without tests
+    get_property(_modules_no_tests GLOBAL PROPERTY PROJECT_MODULES_WITHOUT_TESTS)
+    if(_modules_no_tests)
+        print_box("Modules Without Unit Tests")
+        foreach(_mod IN LISTS _modules_no_tests)
+            message(STATUS "  - ${_mod}")
+        endforeach()
+        message(STATUS "")
     endif()
 
     # Configuration box

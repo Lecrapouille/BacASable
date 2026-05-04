@@ -10,9 +10,10 @@
 #
 ###############################################################################
 
-# File extensions for automatic source discovery
-set(_MODULE_HEADER_EXTENSIONS "h;hpp")
-set(_MODULE_SOURCE_EXTENSIONS "c;cpp")
+# Verify that ProjectBootstrap.cmake was included first
+if(NOT DEFINED _MODULE_HEADER_EXTENSIONS OR NOT DEFINED _MODULE_SOURCE_EXTENSIONS)
+    message(FATAL_ERROR "Module.cmake requires ProjectBootstrap.cmake to be included first")
+endif()
 
 ###############################################################################
 # _module_glob(<out_var> <base> <subdirs> <dir> <exts>)
@@ -178,12 +179,13 @@ endfunction()
 #                                   Omit for executable modules (app sources are
 #                                   passed via EXTRA_SOURCES instead).
 #   [DEPENDENCIES dep1 ...]         Additional link dependencies (or mock targets).
-#   [SUBDIRECTORIES s1 ...]         Restrict test source glob to tests/<s>/.
+#   [SUBDIRECTORIES s1 ...]         Restrict test source glob to ${TEST_DIR_NAME}/<s>/.
 #   [EXTRA_SOURCES src1 ...]        Extra sources compiled into the test binary
 #                                   (app sources minus main for executable modules).
 # )
 #
-# Creates <name>_tests: discovers tests/, links GTest, applies test settings.
+# Creates <name>${TEST_TARGET_SUFFIX}: discovers ${TEST_DIR_NAME}/, links GTest,
+# applies test settings.
 ###############################################################################
 
 function(_module_add_gtest_target name)
@@ -193,20 +195,14 @@ function(_module_add_gtest_target name)
     cmake_parse_arguments(ARG "" "${_single_values}" "${_multi_values}" ${ARGN})
 
     set(_base "${CMAKE_CURRENT_SOURCE_DIR}")
-    _module_glob(_test_sources "${_base}" "${ARG_SUBDIRECTORIES}" tests "${_MODULE_SOURCE_EXTENSIONS}")
+    _module_glob(_test_sources "${_base}" "${ARG_SUBDIRECTORIES}" ${TEST_DIR_NAME} "${_MODULE_SOURCE_EXTENSIONS}")
 
     if(NOT _test_sources)
-        if(NOT ARG_SUBDIRECTORIES)
-            message(WARNING "No test sources found in ${_base}/tests/")
-        else()
-            message(WARNING
-                "No test sources found under ${_base}/tests/"
-                " for SUBDIRECTORIES: ${ARG_SUBDIRECTORIES}")
-        endif()
+        summary_register_module_without_tests(${name})
         return()
     endif()
 
-    set(_test_target ${name}_tests)
+    set(_test_target ${name}${TEST_TARGET_SUFFIX})
     message(STATUS "  Adding test target: ${_test_target}")
     add_executable(${_test_target} ${_test_sources} ${ARG_EXTRA_SOURCES})
 
@@ -216,7 +212,7 @@ function(_module_add_gtest_target name)
     endif()
 
     # Crash stack traces
-    if(TARGET Backward::Backward)
+    if(ENABLE_STACKTRACE AND TARGET Backward::Backward)
         target_link_libraries(${_test_target} PRIVATE Backward::Backward)
     endif()
 
@@ -276,7 +272,7 @@ endfunction()
 #   ├── src/                # Implementation + private headers
 #   ├── mocks/              # Mock implementations (optional)
 #   ├── pch/pch.hpp         # Custom PCH (optional)
-#   └── tests/              # Unit tests (optional)
+#   └── ${TEST_DIR_NAME}/   # Unit tests (optional, configurable via TEST_DIR_NAME)
 #
 # Example (flat layout):
 #   library(database
@@ -395,7 +391,7 @@ function(library TargetName)
     if(BUILD_TESTING AND EXISTS "${_base}/mocks")
         _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mocks "${_MODULE_SOURCE_EXTENSIONS}")
         if(_mock_sources)
-            set(_mock_target ${TargetName}_mock)
+            set(_mock_target mock_${TargetName})
             add_library(${_mock_target} STATIC ${_headers_public} ${_mock_sources})
             target_include_directories(${_mock_target} PUBLIC
                 $<BUILD_INTERFACE:${_base}/mocks>
@@ -456,18 +452,19 @@ function(library TargetName)
     endif()
 
     # Install library target and dependencies
-    if(PROJECT_IS_TOP_LEVEL AND NOT ARG_NO_INSTALL)
+    if(NOT ARG_NO_INSTALL)
         install(TARGETS ${TargetName}
+            EXPORT ${TargetName}Targets
             ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
             LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-            COMPONENT devel
+            COMPONENT ${_COMPONENT_DEV}
         )
 
         # Install debug symbols for shared libraries
         if(ARG_SHARED)
             install_separated_debug_symbols(
-                ${TargetName} "${CMAKE_INSTALL_LIBDIR}" devel)
+                ${TargetName} "${CMAKE_INSTALL_LIBDIR}" ${_COMPONENT_DEV})
         endif()
 
         # Install include directories
@@ -477,17 +474,25 @@ function(library TargetName)
                     if(EXISTS "${_base}/include/${_s}")
                         install(DIRECTORY "include/${_s}/"
                             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-                            COMPONENT devel
+                            COMPONENT ${_COMPONENT_DEV}
                         )
                     endif()
                 endforeach()
             else()
                 install(DIRECTORY include/
                     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-                    COMPONENT devel
+                    COMPONENT ${_COMPONENT_DEV}
                 )
             endif()
         endif()
+
+        # Export targets for find_package()
+        install(EXPORT ${TargetName}Targets
+            FILE ${TargetName}Targets.cmake
+            NAMESPACE ${EXPORT_NAMESPACE}::
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${EXPORT_NAMESPACE}
+            COMPONENT ${_COMPONENT_DEV}
+        )
     endif()
 
     # Create unit test target
@@ -540,7 +545,7 @@ endfunction()
 #       PCH pch/pch.hpp
 #       COMPILE_OPTIONS -Wno-shadow
 #       DEPENDENCIES      foo spdlog::spdlog
-#       TEST_DEPENDENCIES foo_mock
+#       TEST_DEPENDENCIES mock_foo
 #   )
 ###############################################################################
 
@@ -562,7 +567,7 @@ function(executable TargetName)
 
     # Set private dependencies (includes Backward if present)
     set(_exec_private_deps "${ARG_DEPENDENCIES}")
-    if(TARGET Backward::Backward)
+    if(ENABLE_STACKTRACE AND TARGET Backward::Backward)
         list(APPEND _exec_private_deps Backward::Backward)
     endif()
 
@@ -642,7 +647,7 @@ function(executable TargetName)
     endif()
 
     # Link backward-cpp for crash stack traces
-    if(TARGET Backward::Backward)
+    if(ENABLE_STACKTRACE AND TARGET Backward::Backward)
         target_link_libraries(${TargetName} PRIVATE Backward::Backward)
     endif()
 
@@ -658,20 +663,29 @@ function(executable TargetName)
     endif()
 
     # Install executable target and dependencies
-    if(PROJECT_IS_TOP_LEVEL AND NOT ARG_NO_INSTALL)
+    if(NOT ARG_NO_INSTALL)
         # Install executable target
         install(TARGETS ${TargetName}
+            EXPORT ${TargetName}Targets
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            COMPONENT runtime
+            COMPONENT ${_COMPONENT_RUNTIME}
         )
 
         # Install debug symbols for executables
         install_separated_debug_symbols(
-            ${TargetName} "${CMAKE_INSTALL_BINDIR}" runtime)
+            ${TargetName} "${CMAKE_INSTALL_BINDIR}" ${_COMPONENT_RUNTIME})
 
         # Deploy runtime shared library dependencies at install time
         _module_install_runtime_deps(${TargetName})
         message(STATUS "  Runtime dependency deployment: enabled")
+
+        # Export targets for find_package()
+        install(EXPORT ${TargetName}Targets
+            FILE ${TargetName}Targets.cmake
+            NAMESPACE ${EXPORT_NAMESPACE}::
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${EXPORT_NAMESPACE}
+            COMPONENT ${_COMPONENT_DEV}
+        )
     endif()
 
     # Create unit test target
