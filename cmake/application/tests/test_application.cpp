@@ -1,6 +1,12 @@
+// The mock header MUST be included first so the macro-rename trick fires
+// before the real RobotController.h has had a chance to define the class.
+// At build time the mock_robot_controller INTERFACE library also force-
+// includes this same header on every TU, so the IDE / standalone runs and
+// the actual build agree on the visible symbols.
+#include "robot_controller/RobotControllerMock.h"
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "robot_controller/RobotControllerMock.h"
 
 using namespace mp_units::si::unit_symbols;
 using ::testing::_;

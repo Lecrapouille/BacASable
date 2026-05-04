@@ -23,4 +23,6 @@ library(robot_controller
     PCH pch/pch.hpp
     PUBLIC_DEPENDENCIES
         kinematics odometry
+    TEST_DEPENDENCIES
+        mock_kinematics mock_odometry
 )

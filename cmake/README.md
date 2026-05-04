@@ -240,139 +240,157 @@ cmake --install build --component devel
 
 ## 🧪 Mock System
 
-The infrastructure provides a first-class mock system that works **without virtual functions**, **without `#define`/`#undef` tricks**, and **without touching the real headers**. It is based on the *delegate-to-static-singleton* pattern.
+The infrastructure provides a first-class mock system that works **without virtual functions**, **without touching the real headers**, and — critically — **without ever defining a duplicate copy of the real class's symbols**. It is a header-only "compile-time substitution" pattern, modelled after `Cpp/UnitTests/Mock2/test/MockPublisher.h`.
 
-### How It Works
+### Why Not the Old "Bridge `.cpp`" Approach?
 
-Each mockable library `foo` has three files:
+A previous iteration shipped each mock as a small static library (`mock_<name>`) whose `.cpp` re-implemented the real class's methods and routed them to a `gmock` singleton. That solution had a fatal flaw: both the real lib and the mock lib defined the **same** symbols (e.g. `kinematics::DifferentialDrive::twist_to_wheels`).
 
-```cpp
-include/foo/Foo.h          ← Real class declaration (unchanged in tests)
-mocks/foo/FooMock.h        ← GoogleMock struct mirroring Foo's public API
-mocks/foo/FooMock.cpp      ← Bridge: implements the real class, delegates to the mock
+Consider the textbook diamond:
+
+```
+robot_controller  ──PUBLIC──▶ kinematics
+                   ──PUBLIC──▶ odometry
+
+robot_controller_tests
+   linked: robot_controller (which transitively pulls real kinematics + odometry)
+   linked: mock_kinematics, mock_odometry  ← also defines the same symbols!
 ```
 
-**Real header** — untouched, declares the production class with non-virtual methods:
+`nm` confirms the duplication:
 
-```cpp
-// include/kinematics/DifferentialDrive.h
-class DifferentialDrive {
-public:
-    WheelVelocities twist_to_wheels(const Twist&) const;
-    Twist           wheels_to_twist(const WheelVelocities&) const;
-};
+```
+$ nm --defined-only build/robot/libkinematics.a      | grep twist_to_wheels
+T _ZNK10kinematics17DifferentialDrive15twist_to_wheelsERKNS_5TwistE
+$ nm --defined-only build/robot/libmock_kinematics.a | grep twist_to_wheels
+T _ZNK10kinematics17DifferentialDrive15twist_to_wheelsERKNS_5TwistE
 ```
 
-**Mock header** — a separate struct with `MOCK_METHOD` and a static singleton:
+The link only "worked" because static archives are pulled lazily — the linker silently picked one definition over the other depending on the order of `target_link_libraries`. This is an ODR violation and undefined behaviour by the standard.
+
+### How the New Pattern Works
+
+Each mockable class `kinematics::DifferentialDrive` ships **a single header**, no `.cpp`:
 
 ```cpp
 // mocks/kinematics/DifferentialDriveMock.h
-struct DifferentialDriveMock {
-    DifferentialDriveMock()  { instance_ = this; }   // RAII registration
-    ~DifferentialDriveMock() { instance_ = nullptr; }
+#pragma once
 
-    MOCK_METHOD(WheelVelocities, twist_to_wheels, (const Twist&), (const));
-    MOCK_METHOD(Twist, wheels_to_twist, (const WheelVelocities&), (const));
+// Step 1 — pull in the real header with the class renamed via a macro, so all
+// dependent types (Length, Twist, WheelVelocities, ...) stay in scope and are
+// statically tracked: any change to those types breaks the mock at compile time.
+#define DifferentialDrive _DifferentialDrive_Real
+#include "kinematics/DifferentialDrive.h"
+#undef DifferentialDrive
 
-    static DifferentialDriveMock* mock() { return instance_; }
+#include <gmock/gmock.h>
+
+namespace kinematics {
+
+// Step 2 — drop-in replacement class with the same name and namespace. It
+// forwards each call to a singleton gmock instance.
+class DifferentialDrive {
+public:
+    struct Mock {
+        Mock()  { instance_ = this; }
+        ~Mock() { instance_ = nullptr; }
+
+        MOCK_METHOD(WheelVelocities, twist_to_wheels, (const Twist&), (const));
+        MOCK_METHOD(Twist,           wheels_to_twist, (const WheelVelocities&), (const));
+        MOCK_METHOD(Length,          wheel_radius,    (), (const));
+        MOCK_METHOD(Length,          track_width,     (), (const));
+    };
+
+    DifferentialDrive(Length, Length) {}
+
+    WheelVelocities twist_to_wheels(const Twist& t) const {
+        return instance_ ? instance_->twist_to_wheels(t) : WheelVelocities{};
+    }
+    // ... same pattern for the other methods ...
+
 private:
-    static inline DifferentialDriveMock* instance_ = nullptr;
+    static inline Mock* instance_ = nullptr;
 };
-```
 
-**Bridge `.cpp`** — implements the real class's methods, forwards to the mock when active:
+using DifferentialDriveMock = DifferentialDrive::Mock;
 
-```cpp
-// mocks/kinematics/DifferentialDriveMock.cpp
-#include "DifferentialDriveMock.h"   // already includes DifferentialDrive.h
-
-WheelVelocities DifferentialDrive::twist_to_wheels(const Twist& twist) const {
-    if (auto* m = DifferentialDriveMock::mock())
-        return m->twist_to_wheels(twist);
-    return {};   // fallback when no mock is active
-}
+} // namespace kinematics
 ```
 
 ### CMake Integration
 
-`library()` automatically discovers `mocks/` and creates a `mock_<name>` static library:
+`library()` discovers any `mocks/` directory and creates a `mock_<name>` **INTERFACE** library — *not* a static archive. It carries:
 
-```
-kinematics        ← production lib  (src/kinematics/*.cpp)
-mock_kinematics   ← mock bridge lib (mocks/kinematics/DifferentialDriveMock.cpp)
-```
-
-The mock lib exposes the `mocks/` directory as a public include root, so tests can
-`#include "kinematics/DifferentialDriveMock.h"`.
-
-Executable tests use `TEST_DEPENDENCIES` to swap the real lib for the mock bridge:
+* `mocks/` and `include/` as `INTERFACE` include directories (mocks first so the macro-rename can find the real header);
+* `-include <each *Mock.h>` as an `INTERFACE` compile option, which **force-includes** the mock at the top of every TU of the consumer test target — production sources stay untouched;
+* The real library's public dependencies (so dependent value types like `Length` and `Twist` remain available);
+* `GTest::gmock`.
 
 ```cmake
-executable(application
-    DEPENDENCIES      robot_controller          # production build
-    TEST_DEPENDENCIES mock_robot_controller     # test build uses the bridge
+library(robot_controller
+    SUBDIRECTORIES robot_controller
+    PUBLIC_DEPENDENCIES kinematics odometry
+    TEST_DEPENDENCIES   mock_kinematics mock_odometry   # diamond, now safe
 )
+```
+
+When `TEST_DEPENDENCIES` contains any `mock_*`, the test target switches to **source-compile mode**: instead of linking the real `robot_controller.a` (which was built with the real classes baked in), `robot_controller`'s own `src/*.cpp` are recompiled directly into the test binary so that the force-include actually substitutes the mocked classes inside `RobotController.cpp`. The real `robot_controller.a` is **not** in the test link line.
+
+After the refactor, `nm` confirms there is now only one definition of every symbol:
+
+```
+$ ls build/robot/libmock_*.a       # nothing — INTERFACE libs have no archive
+$ nm --defined-only build/robot/libkinematics.a | grep twist_to_wheels
+T _ZNK10kinematics17DifferentialDrive15twist_to_wheelsERKNS_5TwistE   # only here
 ```
 
 ### Singleton Lifecycle
 
-Constructing a `*Mock` object activates the singleton (`instance_ = this`). Destroying it
-resets to `nullptr`. No `SetUp()`/`TearDown()` boilerplate is needed — just declare the
-mock as a fixture member and it is automatically active for the duration of each test:
+Constructing a `Mock` object activates the singleton (`instance_ = this`); destroying it resets to `nullptr`. Just declare the mock as a fixture member:
 
 ```cpp
-class MyTest : public ::testing::Test {
-    RobotControllerMock mock_;   // active from construction to destruction
-    RobotController     ctrl_{...};
+#include "kinematics/DifferentialDriveMock.h"   // see ordering note below
+#include "odometry/WheelOdometryMock.h"
+
+#include <gtest/gtest.h>
+#include "robot_controller/RobotController.h"
+
+class RobotControllerTest : public ::testing::Test {
+    kinematics::DifferentialDriveMock drive_mock_;
+    odometry::WheelOdometryMock       odom_mock_;
+    robot_controller::RobotController ctrl{0.05*m, 0.30*m, 1000, 0.05*s};
 };
 ```
+
+### Include-Ordering Rule
+
+The `*Mock.h` header **must** be visible before any other include that pulls in the real header. The build does this transparently with `-include`, but it is good practice to also list the explicit includes at the top of the test source so IDE / clangd indexing without the build flags also sees the mock first.
 
 ### Writing Tests with `EXPECT_CALL`
 
 ```cpp
-// Exact argument matching (requires operator== on structs)
-TEST_F(MyTest, StepForwardsExactTwist) {
-    kinematics::Twist cmd{0.5 * (m/s), 0.3 * (rad/s)};
-    EXPECT_CALL(mock_, step(cmd)).Times(1);
-    ctrl_.step(cmd);
-}
+TEST_F(RobotControllerTest, StepDelegatesToDriveAndOdometry) {
+    using namespace kinematics;
+    EXPECT_CALL(drive_mock_, twist_to_wheels(Twist{0.5*(m/s), 0.0*(rad/s)}))
+        .WillOnce(Return(WheelVelocities{10.0*(rad/s), 10.0*(rad/s)}));
+    EXPECT_CALL(drive_mock_, wheel_radius()).WillOnce(Return(0.05*m));
+    EXPECT_CALL(odom_mock_,  update(_, _)).Times(1);
 
-// Call-count verification
-TEST_F(MyTest, MultipleStepsAreCounted) {
-    EXPECT_CALL(mock_, step(::testing::_)).Times(10);
-    for (int i = 0; i < 10; ++i) ctrl_.step({});
-}
-
-// Return-value injection
-TEST_F(MyTest, PoseReturnsMockedValue) {
-    static const odometry::Pose2D expected{1.0 * m, 2.0 * m, 0.5 * rad};
-    EXPECT_CALL(mock_, pose()).WillOnce(::testing::ReturnRef(expected));
-    EXPECT_DOUBLE_EQ(ctrl_.pose().x.numerical_value_in(m), 1.0);
-}
-
-// Call-order enforcement
-TEST_F(MyTest, StepBeforePose) {
-    static const odometry::Pose2D after{0.5 * m, 0.0 * m, 0.0 * rad};
-    ::testing::InSequence seq;
-    EXPECT_CALL(mock_, step(::testing::_));
-    EXPECT_CALL(mock_, pose()).WillOnce(::testing::ReturnRef(after));
-    ctrl_.step({0.5 * (m/s), 0.0 * (rad/s)});
-    ctrl_.pose();
+    ctrl.step({0.5*(m/s), 0.0*(rad/s)});
 }
 ```
 
-### Limitations and Trade-offs
+### Trade-offs
 
-| Criterion | This pattern | Traditional virtual mock |
-|-----------|-------------|--------------------------|
-| No virtual functions required | ✓ | ✗ |
-| No `#define`/`#undef` tricks | ✓ | ✓ |
-| Inline methods in headers | ✗ (not interceptable) | ✓ |
-| Compiler catches missing bridge methods | ✓ (link error) | ✓ |
-| Compiler catches missing `MOCK_METHOD` | ✗ (silent) | ✓ |
+| Criterion | Header-only (this pattern) | Old `.cpp`-bridge |
+|-----------|---------------------------|------------------|
+| Multi-definition / ODR risk | None — no symbols defined | Real risk in diamond setups |
+| Tracks dependent value types in real header | ✓ (real header is included via macro-rename) | ✓ |
+| Tracks new methods on the real class | Partial — caught at consumer compile if used | ✓ (link error) |
+| Dependent libraries can be safely linked alongside the mock | ✓ | ✗ |
+| Inline methods in real headers | ✓ (mock header takes precedence) | ✗ |
 
-If a new method is added to the real class, the bridge `.cpp` will fail to link (missing
-symbol) — a hard compile-time safety net. The `*Mock.h` must be kept in sync manually.
+If a new method is added to the real class, calls to it from the unit-under-test will fail to compile (`no member named 'foo' in 'kinematics::DifferentialDrive'` against the mock). Adding the missing `MOCK_METHOD` and forwarder is then a one-line change.
 
 ---
 

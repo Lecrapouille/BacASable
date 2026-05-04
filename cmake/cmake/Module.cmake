@@ -174,6 +174,30 @@ endfunction()
 
 
 ###############################################################################
+# _module_uses_header_only_mocks(<out_var> <test_deps>...)
+#
+# Sets <out_var> to TRUE if any of the dependency names matches "mock_*".
+# In that mode the library/executable test target compiles its own sources
+# directly instead of linking the real library, so that force-include of the
+# header-only mocks (carried by mock_* INTERFACE libraries) actually applies
+# to those sources (cf. mocks/.../*Mock.h).
+###############################################################################
+
+function(_module_uses_header_only_mocks out)
+
+    set(_uses_mocks FALSE)
+    foreach(_dep IN LISTS ARGN)
+        if(_dep MATCHES "^mock_")
+            set(_uses_mocks TRUE)
+            break()
+        endif()
+    endforeach()
+    set(${out} ${_uses_mocks} PARENT_SCOPE)
+
+endfunction()
+
+
+###############################################################################
 # _module_add_gtest_target(<name>
 #   [LINK_TESTED_TARGET <target>]   Link the library under test (library modules).
 #                                   Omit for executable modules (app sources are
@@ -386,32 +410,54 @@ function(library TargetName)
         message(STATUS "  Version: ${ARG_VERSION}")
     endif()
 
-    # Create mock library (only when BUILD_TESTING is ON)
-    set(_all_targets ${TargetName})
+    # Real library include path & deps
+    target_include_directories(${TargetName} PUBLIC
+        $<BUILD_INTERFACE:${_base}/include>
+    )
+    if(ARG_PUBLIC_DEPENDENCIES)
+        target_link_libraries(${TargetName} PUBLIC ${ARG_PUBLIC_DEPENDENCIES})
+    endif()
+    add_library(${PROJECT_NAME}::${TargetName} ALIAS ${TargetName})
+
+    # ---------------------------------------------------------------------------
+    # Header-only mock INTERFACE library (style MockPublisher.h)
+    # ---------------------------------------------------------------------------
+    # The mock_<TargetName> target exposes:
+    #   - mocks/ and include/ as INTERFACE include directories (mocks first so
+    #     the macro-rename trick inside *Mock.h finds the real header).
+    #   - "-include <each *Mock.h>" as an INTERFACE compile option so that any
+    #     consumer compilation unit transparently gets the mock substituted in
+    #     place of the real class (no edit of production sources needed).
+    #   - The real library's PUBLIC dependencies, so dependent value types
+    #     (Length, Twist, ...) are available to the mock and to consumer code.
+    #
+    # Crucially, this library carries NO object files — no symbol of the real
+    # class is defined here. Substitution happens at compile time. There is
+    # therefore no risk of ODR / multiple-definition issues when a test target
+    # transitively links the real library AND a mock for one of its deps.
+    # ---------------------------------------------------------------------------
     if(BUILD_TESTING AND EXISTS "${_base}/mocks")
-        _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mocks "${_MODULE_SOURCE_EXTENSIONS}")
-        if(_mock_sources)
+        _module_glob(_mock_headers "${_base}" "${ARG_SUBDIRECTORIES}" mocks "${_MODULE_HEADER_EXTENSIONS}")
+        if(_mock_headers)
             set(_mock_target mock_${TargetName})
-            add_library(${_mock_target} STATIC ${_headers_public} ${_mock_sources})
-            target_include_directories(${_mock_target} PUBLIC
+            add_library(${_mock_target} INTERFACE)
+            target_include_directories(${_mock_target} INTERFACE
                 $<BUILD_INTERFACE:${_base}/mocks>
+                $<BUILD_INTERFACE:${_base}/include>
             )
-            target_link_libraries(${_mock_target} PUBLIC GTest::gmock)
-            list(APPEND _all_targets ${_mock_target})
-            message(STATUS "  Mock library: ${_mock_target}")
+            foreach(_h IN LISTS _mock_headers)
+                target_compile_options(${_mock_target} INTERFACE
+                    "SHELL:-include ${_h}"
+                )
+            endforeach()
+            target_link_libraries(${_mock_target} INTERFACE
+                GTest::gmock
+                ${ARG_PUBLIC_DEPENDENCIES}
+            )
+            add_library(${PROJECT_NAME}::${_mock_target} ALIAS ${_mock_target})
+            message(STATUS "  Mock interface library: ${_mock_target} (header-only, force-include)")
         endif()
     endif()
-
-    # Apply shared configuration to both the real target and the mock
-    foreach(_target IN LISTS _all_targets)
-        target_include_directories(${_target} PUBLIC
-            $<BUILD_INTERFACE:${_base}/include>
-        )
-        if(ARG_PUBLIC_DEPENDENCIES)
-            target_link_libraries(${_target} PUBLIC ${ARG_PUBLIC_DEPENDENCIES})
-        endif()
-        add_library(${PROJECT_NAME}::${_target} ALIAS ${_target})
-    endforeach()
 
     if(ARG_PUBLIC_DEPENDENCIES)
         message(STATUS "  Public dependencies: ${ARG_PUBLIC_DEPENDENCIES}")
@@ -496,12 +542,28 @@ function(library TargetName)
     endif()
 
     # Create unit test target
+    #
+    # When TEST_DEPENDENCIES contains any header-only mock (mock_*), the test
+    # target switches to "source-compile" mode: instead of linking the real
+    # ${TargetName} static library (which was built with the real classes
+    # baked in), the lib's own sources are recompiled into the test binary so
+    # that the -include compile flags carried by the mock_* INTERFACE libs
+    # actually substitute the mocked classes inside ${TargetName}'s code.
     if(BUILD_TESTING)
-        _module_add_gtest_target(${TargetName}
-            LINK_TESTED_TARGET ${TargetName}
-            DEPENDENCIES   ${ARG_TEST_DEPENDENCIES}
-            SUBDIRECTORIES ${ARG_SUBDIRECTORIES}
-        )
+        _module_uses_header_only_mocks(_uses_mocks ${ARG_TEST_DEPENDENCIES})
+        if(_uses_mocks)
+            _module_add_gtest_target(${TargetName}
+                DEPENDENCIES   ${ARG_TEST_DEPENDENCIES} ${ARG_PRIVATE_DEPENDENCIES}
+                SUBDIRECTORIES ${ARG_SUBDIRECTORIES}
+                EXTRA_SOURCES  ${_sources}
+            )
+        else()
+            _module_add_gtest_target(${TargetName}
+                LINK_TESTED_TARGET ${TargetName}
+                DEPENDENCIES   ${ARG_TEST_DEPENDENCIES}
+                SUBDIRECTORIES ${ARG_SUBDIRECTORIES}
+            )
+        endif()
     endif()
 
 endfunction()
