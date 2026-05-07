@@ -319,10 +319,10 @@ add_module_executable(application
 
 `add_module_mock()` accepts its own `PUBLIC_DEPENDENCIES`/`PRIVATE_DEPENDENCIES`
 (decoupled from the production library so the real implementation is never
-silently re-linked). Use `FORCE_INCLUDES` to list mock headers: each path
-(relative to the module directory or absolute) becomes a PUBLIC `-include`
-on the mock target, which propagates via `INTERFACE_COMPILE_OPTIONS` to any
-test that links the mock, so the mock is seen before the real public header.
+silently re-linked). Every header file discovered under `mocks/` is also
+automatically turned into a PUBLIC `-include <abs_path>` flag on the mock
+target, so any test target linking the mock picks up the mock declarations
+before the real headers at compile time — no manual list to maintain.
 
 ### Singleton Lifecycle
 
@@ -563,7 +563,6 @@ add_module_mock(<name>
     [COMPILE_OPTIONS <opt1> <opt2> ...]
     [PUBLIC_DEPENDENCIES  <dep1> <dep2> ...]
     [PRIVATE_DEPENDENCIES <dep1> <dep2> ...]
-    [FORCE_INCLUDES <hdr1> [<hdr2> ...]]
     [SUBDIRECTORIES <s1> [<s2> ...]]
     [SOURCES <src1> [<src2> ...]]
 )
@@ -578,13 +577,13 @@ add_module_mock(<name>
 | `COMPILE_OPTIONS` | list | No | Extra compile flags applied PRIVATE to the mock target only. |
 | `PUBLIC_DEPENDENCIES` | list | No | Linked PUBLIC. Propagated to test targets that link the mock (so they can use types exposed by the mock's public headers). **Must NOT contain the production library being mocked**, otherwise duplicate symbols will appear. |
 | `PRIVATE_DEPENDENCIES` | list | No | Linked PRIVATE. Visible only while compiling the mock itself. |
-| `FORCE_INCLUDES` | list | No | Each entry (path relative to the module directory, or absolute) is added as `target_compile_options(<mock> PUBLIC "SHELL:-include <abs_path>")`. The flag propagates to every consumer linking the mock so the mock header shadows the real public header at compile time. |
 | `SUBDIRECTORIES` | list | No | Restricts mock source discovery to `mocks/<s>/`. **Mutually exclusive with `SOURCES`.** |
 | `SOURCES` | list | No | Explicit list of mock source files. **Mutually exclusive with `SUBDIRECTORIES`.** |
 
 #### Automatic Behaviors
 
 - **Source discovery**: Globs `mocks/**` (or `mocks/<s>/**` per `SUBDIRECTORIES` entry) for the configured source extensions.
+- **Header auto-shadowing**: Every header discovered under `mocks/` is added as a PUBLIC compile option `-include <abs_path>` on the mock target. The flag propagates through `INTERFACE_COMPILE_OPTIONS` to every test target that links the mock, so consumers see the mock declarations before the real headers at compile time — no manual list to maintain.
 - **GTest::gmock**: Always linked PUBLIC.
 - **Public include layout**: `${module_dir}` (so consumers can `#include "mocks/<sub>/<Name>Mock.h"`) and `${module_dir}/include` (so consumers can `#include "<sub>/<Name>.h"`).
 - **Alias target**: Creates `${PROJECT_NAME}::mock_<name>` alias.
@@ -601,7 +600,6 @@ add_module_library(kinematics
 add_module_mock(kinematics
     SUBDIRECTORIES kinematics
     PUBLIC_DEPENDENCIES mp-units::mp-units
-    FORCE_INCLUDES      mocks/kinematics/DifferentialDriveMock.h
 )
 ```
 

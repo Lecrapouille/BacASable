@@ -13,8 +13,6 @@ add_module_mock(kinematics
     PCH pch/pch.hpp
     PUBLIC_DEPENDENCIES
         mp-units::mp-units
-    FORCE_INCLUDES
-        mocks/kinematics/DifferentialDriveMock.h
 )
 
 add_module_library(odometry
@@ -32,8 +30,6 @@ add_module_mock(odometry
     PUBLIC_DEPENDENCIES
         kinematics
         mp-units::mp-units
-    FORCE_INCLUDES
-        mocks/odometry/WheelOdometryMock.h
 )
 
 add_module_library(robot_controller
@@ -49,6 +45,4 @@ add_module_mock(robot_controller
     PCH pch/pch.hpp
     PUBLIC_DEPENDENCIES
         kinematics odometry
-    FORCE_INCLUDES
-        mocks/robot_controller/RobotControllerMock.h
 )

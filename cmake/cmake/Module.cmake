@@ -267,7 +267,7 @@ endfunction()
 #   5. Creates a unit test target if BUILD_TESTING is ON. TEST_DEPENDENCIES
 #      are linked to the test target — pass mock targets there to inject
 #      mocks (and automatically pick up their INTERFACE_COMPILE_OPTIONS, e.g.
-#      PUBLIC `-include` flags when using add_module_mock).
+#      PUBLIC `-include` flags from headers discovered under mocks/).
 #
 # Mock libraries are created with the separate add_module_mock() function so
 # their dependencies and force-includes are decoupled from the production
@@ -708,7 +708,6 @@ endfunction()
 #                 [COMPILE_OPTIONS opt1 opt2 ...]
 #                 [PUBLIC_DEPENDENCIES  dep1 dep2 ...]
 #                 [PRIVATE_DEPENDENCIES dep1 dep2 ...]
-#                 [FORCE_INCLUDES hdr1 hdr2 ...]
 #                 [SUBDIRECTORIES s1 [s2 ...]]
 #                 [SOURCES src1 [src2 ...]])
 #
@@ -726,11 +725,13 @@ endfunction()
 #   $<BUILD_INTERFACE:${_base}>          → "mocks/<sub>/<Name>Mock.h"
 #   $<BUILD_INTERFACE:${_base}/include>  → "<sub>/<Name>.h"
 #
-# FORCE_INCLUDES:
-#   Each entry (path relative to the module dir, or absolute) is emitted as a
-#   PUBLIC `target_compile_options(... "SHELL:-include <abs_path>")` on the mock
-#   target so it propagates through INTERFACE_COMPILE_OPTIONS to every consumer
-#   linking the mock (tests see the mock before the real public header).
+# Automatic header-shadowing:
+#   Every header file discovered under mocks/ is automatically added as a
+#   PUBLIC `-include <abs_path>` flag on the mock target.
+#   Because the flag is PUBLIC it propagates through INTERFACE_COMPILE_OPTIONS
+#   to every consumer that links the mock (typically a test target via
+#   TEST_DEPENDENCIES). Tests therefore see the mock headers before the real
+#   ones at compile time — no FORCE_INCLUDES argument to maintain.
 #
 # Dependencies:
 #   - PUBLIC_DEPENDENCIES describe the mock's usage requirements: libraries
@@ -749,7 +750,6 @@ endfunction()
 #   add_module_mock(kinematics
 #       SUBDIRECTORIES kinematics
 #       PUBLIC_DEPENDENCIES mp-units::mp-units
-#       FORCE_INCLUDES      mocks/kinematics/DifferentialDriveMock.h
 #   )
 ###############################################################################
 
@@ -764,7 +764,6 @@ function(add_module_mock TargetName)
     set(_multi_values
         PUBLIC_DEPENDENCIES
         PRIVATE_DEPENDENCIES
-        FORCE_INCLUDES
         COMPILE_OPTIONS
         SUBDIRECTORIES
         SOURCES
@@ -788,9 +787,11 @@ function(add_module_mock TargetName)
 
     if(ARG_SOURCES)
         set(_mock_sources ${ARG_SOURCES})
+        _module_glob(_mock_headers   "${_base}" "" mocks   "${_MODULE_HEADER_EXTENSIONS}")
         _module_glob(_headers_public "${_base}" "" include "${_MODULE_HEADER_EXTENSIONS}")
     else()
         _module_glob(_mock_sources   "${_base}" "${ARG_SUBDIRECTORIES}" mocks   "${_MODULE_SOURCE_EXTENSIONS}")
+        _module_glob(_mock_headers   "${_base}" "${ARG_SUBDIRECTORIES}" mocks   "${_MODULE_HEADER_EXTENSIONS}")
         _module_glob(_headers_public "${_base}" "${ARG_SUBDIRECTORIES}" include "${_MODULE_HEADER_EXTENSIONS}")
     endif()
 
@@ -814,7 +815,9 @@ function(add_module_mock TargetName)
     set(_mock_target mock_${TargetName})
     message(STATUS "Adding mock library: ${_mock_target}")
 
-    add_library(${_mock_target} STATIC ${_headers_public} ${_mock_sources})
+    add_library(${_mock_target} STATIC
+        ${_headers_public} ${_mock_headers} ${_mock_sources}
+    )
     add_library(${PROJECT_NAME}::${_mock_target} ALIAS ${_mock_target})
 
     # Public include layout: see header comment.
@@ -839,16 +842,15 @@ function(add_module_mock TargetName)
         target_compile_options(${_mock_target} PRIVATE ${ARG_COMPILE_OPTIONS})
     endif()
 
-    if(ARG_FORCE_INCLUDES)
-        foreach(_inc IN LISTS ARG_FORCE_INCLUDES)
-            if(NOT IS_ABSOLUTE "${_inc}")
-                set(_inc_abs "${_base}/${_inc}")
-            else()
-                set(_inc_abs "${_inc}")
-            endif()
-            target_compile_options(${_mock_target} PUBLIC "SHELL:-include ${_inc_abs}")
-        endforeach()
-        message(STATUS "  Force-includes: ${ARG_FORCE_INCLUDES}")
+    # Auto-shadowing: every mock header becomes a PUBLIC `-include`, so any
+    # test target linking the mock automatically picks the mock declarations
+    # before the real ones at compile time (header-replacement style mocking).
+    foreach(_hdr IN LISTS _mock_headers)
+        target_compile_options(${_mock_target} PUBLIC "SHELL:-include ${_hdr}")
+    endforeach()
+    if(_mock_headers)
+        list(LENGTH _mock_headers _n_headers)
+        message(STATUS "  Auto force-include: ${_n_headers} mock header(s)")
     endif()
 
     if(ARG_PCH)
