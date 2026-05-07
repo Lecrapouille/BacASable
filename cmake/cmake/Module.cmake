@@ -174,6 +174,96 @@ endfunction()
 
 
 ###############################################################################
+# _module_add_mock_library(<name>
+#   BASE                <dir>           Module source directory.
+#   HEADERS_PUBLIC      <hdr...>        Public headers added to the target sources
+#                                       (so IDEs see them in the mock target).
+#   SUBDIRECTORIES      <s...>          Forwarded to glob mocks/<s>/ when set.
+#   MOCK_DEPENDENCIES   <dep...>        PUBLIC link deps describing the mock's
+#                                       usage requirements: libraries needed to
+#                                       compile the mock translation units AND
+#                                       to use its public headers from a test.
+#                                       Must NOT include the real library being
+#                                       mocked, otherwise the mock and the real
+#                                       implementation would both end up in the
+#                                       link line and produce duplicate symbols.
+#   MOCK_FORCE_INCLUDES <hdr...>        PUBLIC `-include <hdr>` flags propagated
+#                                       to every consumer of the mock so the
+#                                       mock headers shadow the real ones at
+#                                       compile time. Paths are passed through
+#                                       to the compiler verbatim; they must be
+#                                       resolvable through the consumer's include
+#                                       search paths (or be absolute).
+# )
+#
+# Internal helper. Builds a STATIC library named mock_<name> from sources
+# discovered under <BASE>/mocks/. Returns silently when BUILD_TESTING is OFF,
+# the mocks/ directory is missing, or it contains no source files.
+###############################################################################
+
+function(_module_add_mock_library TargetName)
+
+    if(NOT BUILD_TESTING)
+        return()
+    endif()
+
+    set(_single_values BASE)
+    set(_multi_values
+        HEADERS_PUBLIC
+        SUBDIRECTORIES
+        MOCK_DEPENDENCIES
+        MOCK_FORCE_INCLUDES
+    )
+    cmake_parse_arguments(ARG "" "${_single_values}" "${_multi_values}" ${ARGN})
+
+    set(_base "${ARG_BASE}")
+    if(NOT EXISTS "${_base}/mocks")
+        return()
+    endif()
+
+    _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mocks "${_MODULE_SOURCE_EXTENSIONS}")
+    if(NOT _mock_sources)
+        return()
+    endif()
+
+    set(_mock_target mock_${TargetName})
+    add_library(${_mock_target} STATIC ${ARG_HEADERS_PUBLIC} ${_mock_sources})
+
+    # Public include layout exposed to consumers of the mock:
+    #   ${_base}          → mocks/<sub>/<Name>Mock.h     (mock headers)
+    #   ${_base}/include  → <sub>/<Name>.h               (real public headers)
+    target_include_directories(${_mock_target} PUBLIC
+        $<BUILD_INTERFACE:${_base}>
+        $<BUILD_INTERFACE:${_base}/include>
+    )
+
+    # MOCK_DEPENDENCIES are PUBLIC: they describe the mock's usage
+    # requirements (compile + interface). The mock typically exposes types
+    # from these dependencies in its public headers, so consumers (tests)
+    # need them as well. The caller is responsible for not listing the
+    # real library being mocked here, otherwise duplicate symbols would
+    # appear once the mock provides its own definitions.
+    target_link_libraries(${_mock_target}
+        PUBLIC ${ARG_MOCK_DEPENDENCIES} GTest::gmock
+    )
+
+    # Optional `-include` flags. Made PUBLIC so that any test target linking
+    # the mock library automatically picks up the mock header before the real
+    # one (header-replacement mocking style).
+    if(ARG_MOCK_FORCE_INCLUDES)
+        foreach(_inc IN LISTS ARG_MOCK_FORCE_INCLUDES)
+            target_compile_options(${_mock_target} PUBLIC "SHELL:-include ${_inc}")
+        endforeach()
+        message(STATUS "  Mock force-includes: ${ARG_MOCK_FORCE_INCLUDES}")
+    endif()
+
+    add_library(${PROJECT_NAME}::${_mock_target} ALIAS ${_mock_target})
+    message(STATUS "  Mock library: ${_mock_target}")
+
+endfunction()
+
+
+###############################################################################
 # _module_add_gtest_target(<name>
 #   [LINK_TESTED_TARGET <target>]   Link the library under test (library modules).
 #                                   Omit for executable modules (app sources are
@@ -243,9 +333,11 @@ endfunction()
 #                    [VERSION <version>]
 #                    [PCH <path>]
 #                    [COMPILE_OPTIONS opt1 opt2 ...]
-#                    [PUBLIC_DEPENDENCIES dep1 dep2 ...]
+#                    [PUBLIC_DEPENDENCIES  dep1 dep2 ...]
 #                    [PRIVATE_DEPENDENCIES dep1 dep2 ...]
-#                    [TEST_DEPENDENCIES dep1 dep2 ...]
+#                    [TEST_DEPENDENCIES    dep1 dep2 ...]
+#                    [MOCK_DEPENDENCIES    dep1 dep2 ...]
+#                    [MOCK_FORCE_INCLUDES  hdr1 hdr2 ...]
 #                    [SUBDIRECTORIES s1 [s2 ...]]
 #                    [SOURCES src1 [src2 ...]])
 #
@@ -261,9 +353,25 @@ endfunction()
 #      headers in include/ (or include/<s>/)
 #   2. Creates a STATIC (default) or SHARED library target
 #   3. Creates an alias: ${PROJECT_NAME}::${TargetName}
-#   4. Optionally creates a mock library from mock/ (or mock/<s>/) directory
+#   4. Optionally creates a mock library from mocks/ (or mocks/<s>/) directory.
+#      The mock target is configured independently from the production library
+#      to avoid duplicated symbols when the mock provides its own definitions
+#      of production class methods (see MOCK_DEPENDENCIES below).
 #   5. Configures installation (component: devel) unless NO_INSTALL
 #   6. Creates a unit test target if BUILD_TESTING is ON
+#
+# Mock-related arguments:
+#   - MOCK_DEPENDENCIES   : PUBLIC deps describing the mock's usage
+#                           requirements (compile + interface). They are
+#                           propagated to test targets linking the mock, so
+#                           tests can use the types exposed by the mock's
+#                           public headers. Must not contain the real library
+#                           being mocked (otherwise duplicate symbols).
+#   - MOCK_FORCE_INCLUDES : PUBLIC `-include <hdr>` flags propagated to every
+#                           consumer of the mock so the mock headers shadow
+#                           the real ones at compile time. Paths must be
+#                           resolvable through the consumer's include search
+#                           paths (or be absolute).
 #
 # Expected directory structure (flat layout; or include/<s>/, src/<s>/, ...):
 #   <module>/
@@ -284,12 +392,14 @@ endfunction()
 #       TEST_DEPENDENCIES    testutils
 #   )
 #
-# Example (multi-subdirectory layout):
+# Example (multi-subdirectory layout, with mocks):
 #   library(kinematics
 #       VERSION 0.1.0
 #       SUBDIRECTORIES kinematics
 #       PCH pch/pch.hpp
-#       PUBLIC_DEPENDENCIES mp-units::mp-units
+#       PUBLIC_DEPENDENCIES  mp-units::mp-units
+#       MOCK_DEPENDENCIES    mp-units::mp-units
+#       MOCK_FORCE_INCLUDES  mocks/kinematics/DifferentialDriveMock.h
 #   )
 ###############################################################################
 
@@ -302,6 +412,8 @@ function(library TargetName)
         PUBLIC_DEPENDENCIES
         PRIVATE_DEPENDENCIES
         TEST_DEPENDENCIES
+        MOCK_DEPENDENCIES
+        MOCK_FORCE_INCLUDES
         COMPILE_OPTIONS
         SUBDIRECTORIES
         SOURCES
@@ -372,7 +484,9 @@ function(library TargetName)
         endif()
     endif()
 
-    # Create library target
+    # ---------------------------------------------------------------------
+    # Production library target
+    # ---------------------------------------------------------------------
     add_library(${TargetName} ${_lib_type}
         ${_headers_public} ${_headers_private} ${_sources}
     )
@@ -386,62 +500,35 @@ function(library TargetName)
         message(STATUS "  Version: ${ARG_VERSION}")
     endif()
 
-    # Create mock library (only when BUILD_TESTING is ON)
-    set(_all_targets ${TargetName})
-    if(BUILD_TESTING AND EXISTS "${_base}/mocks")
-        _module_glob(_mock_sources "${_base}" "${ARG_SUBDIRECTORIES}" mocks "${_MODULE_SOURCE_EXTENSIONS}")
-        if(_mock_sources)
-            set(_mock_target mock_${TargetName})
-            add_library(${_mock_target} STATIC ${_headers_public} ${_mock_sources})
-            target_include_directories(${_mock_target} PUBLIC
-                $<BUILD_INTERFACE:${_base}/mocks>
-            )
-            target_link_libraries(${_mock_target} PUBLIC GTest::gmock)
-            list(APPEND _all_targets ${_mock_target})
-            message(STATUS "  Mock library: ${_mock_target}")
-        endif()
-    endif()
+    add_library(${PROJECT_NAME}::${TargetName} ALIAS ${TargetName})
 
-    # Apply shared configuration to both the real target and the mock
-    foreach(_target IN LISTS _all_targets)
-        target_include_directories(${_target} PUBLIC
-            $<BUILD_INTERFACE:${_base}/include>
-        )
-        if(ARG_PUBLIC_DEPENDENCIES)
-            target_link_libraries(${_target} PUBLIC ${ARG_PUBLIC_DEPENDENCIES})
-        endif()
-        add_library(${PROJECT_NAME}::${_target} ALIAS ${_target})
-    endforeach()
+    target_include_directories(${TargetName}
+        PUBLIC  $<BUILD_INTERFACE:${_base}/include>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        PRIVATE ${_base}/src
+    )
 
     if(ARG_PUBLIC_DEPENDENCIES)
+        target_link_libraries(${TargetName} PUBLIC ${ARG_PUBLIC_DEPENDENCIES})
         message(STATUS "  Public dependencies: ${ARG_PUBLIC_DEPENDENCIES}")
     endif()
 
-    # Add build banner
-    _module_add_build_banner(${TargetName} "Linked ${_lib_label} library: ${TargetName}")
+    if(ARG_PRIVATE_DEPENDENCIES)
+        target_link_libraries(${TargetName} PRIVATE ${ARG_PRIVATE_DEPENDENCIES})
+        message(STATUS "  Private dependencies: ${ARG_PRIVATE_DEPENDENCIES}")
+    endif()
 
     # Set shared library runtime path
     if(ARG_SHARED)
         set_target_properties(${TargetName} PROPERTIES
-            INSTALL_RPATH            "$ORIGIN/../lib"
-            BUILD_WITH_INSTALL_RPATH OFF
+            INSTALL_RPATH               "$ORIGIN/../lib"
+            BUILD_WITH_INSTALL_RPATH    OFF
             INSTALL_RPATH_USE_LINK_PATH TRUE
         )
     endif()
 
-    # Set include directories
-    target_include_directories(${TargetName}
-        PUBLIC  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-        PRIVATE ${_base}/src
-    )
-
-    # Link private dependencies
-    if(ARG_PRIVATE_DEPENDENCIES)
-        message(STATUS "  Private dependencies: ${ARG_PRIVATE_DEPENDENCIES}")
-        target_link_libraries(${TargetName} PRIVATE ${ARG_PRIVATE_DEPENDENCIES})
-    endif()
-
-    # Configure target: warnings, sanitizers, coverage, module name definition, split DWARF, and optional per-target compile options
+    # Configure target: warnings, sanitizers, coverage, module name definition,
+    # split DWARF, and optional per-target compile options
     _module_configure_target(${TargetName} COMPILE_OPTIONS ${ARG_COMPILE_OPTIONS})
 
     # Precompile headers
@@ -450,6 +537,19 @@ function(library TargetName)
     else()
         target_configure_pch(${TargetName})
     endif()
+
+    _module_add_build_banner(${TargetName} "Linked ${_lib_label} library: ${TargetName}")
+
+    # ---------------------------------------------------------------------
+    # Mock library target (test-only, configured independently)
+    # ---------------------------------------------------------------------
+    _module_add_mock_library(${TargetName}
+        BASE                ${_base}
+        HEADERS_PUBLIC      ${_headers_public}
+        SUBDIRECTORIES      ${ARG_SUBDIRECTORIES}
+        MOCK_DEPENDENCIES   ${ARG_MOCK_DEPENDENCIES}
+        MOCK_FORCE_INCLUDES ${ARG_MOCK_FORCE_INCLUDES}
+    )
 
     # Install library target and dependencies
     if(NOT ARG_NO_INSTALL)

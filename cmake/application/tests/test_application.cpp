@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "robot_controller/RobotControllerMock.h"
+#include "mocks/robot_controller/RobotControllerMock.h"
 
 using namespace mp_units::si::unit_symbols;
 using ::testing::_;

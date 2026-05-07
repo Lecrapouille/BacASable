@@ -6,6 +6,8 @@ library(kinematics
     PCH pch/pch.hpp
     PUBLIC_DEPENDENCIES
         mp-units::mp-units
+    MOCK_DEPENDENCIES
+        mp-units::mp-units
 )
 
 library(odometry
@@ -15,6 +17,9 @@ library(odometry
     PUBLIC_DEPENDENCIES
         kinematics
         mp-units::mp-units
+    MOCK_DEPENDENCIES
+        kinematics
+        mp-units::mp-units
 )
 
 library(robot_controller
@@ -22,5 +27,7 @@ library(robot_controller
     SUBDIRECTORIES robot_controller
     PCH pch/pch.hpp
     PUBLIC_DEPENDENCIES
+        kinematics odometry
+    MOCK_DEPENDENCIES
         kinematics odometry
 )
