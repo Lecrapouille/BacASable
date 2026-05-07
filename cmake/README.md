@@ -1,6 +1,6 @@
 # 🏗️ CMake C++ Infrastructure
 
-A reusable CMake infrastructure for C++ multi-module projects. It provides high-level functions to declare libraries and executables with automatic source discovery, strict compiler warnings, precompiled headers, sanitizers, code coverage, doxygen, stack trace (backward-cpp), unit tests (GoogleTest) and more. Dependencies are managed via Conan. Two single functions do all the work: `library()`, `executable()`.
+A reusable CMake infrastructure for C++ multi-module projects. It provides high-level functions to declare libraries, executables and mock libraries with automatic source discovery, strict compiler warnings, precompiled headers, sanitizers, code coverage, doxygen, stack trace (backward-cpp), unit tests (GoogleTest) and more. Dependencies are managed via Conan. Three functions do all the work: `add_module_library()`, `add_module_executable()`, `add_module_mock()`.
 
 This infrastructure expects each module to follow a standard directory layout (sources and headers are discovered as `*.c`, `*.cpp`, `*.h`, `*.hpp` only):
 
@@ -15,7 +15,7 @@ This infrastructure expects each module to follow a standard directory layout (s
 └── tests/              # GoogleTest unit tests (optional)
 ```
 
-The demo libraries (`kinematics`, `odometry`, `robot_controller`) live under [`robot/`](robot/) in a **multi-subdirectory** layout (`include/<name>/`, `src/<name>/`, …) with one `library()` call per target and the `SUBDIRECTORIES` keyword. They are **examples only**. The demo uses [mp-units](https://mpusz.github.io/mp-units/) for SI unit handling (velocities in m/s, rad/s) installed from Conan.
+The demo libraries (`kinematics`, `odometry`, `robot_controller`) live under [`robot/`](robot/) in a **multi-subdirectory** layout (`include/<name>/`, `src/<name>/`, …) with one `add_module_library()` call per target and the `SUBDIRECTORIES` keyword. They are **examples only**. The demo uses [mp-units](https://mpusz.github.io/mp-units/) for SI unit handling (velocities in m/s, rad/s) installed from Conan.
 
 ---
 
@@ -25,7 +25,7 @@ All infrastructure files live in the `cmake/` directory. Include `ProjectBootstr
 
 | File | Purpose |
 |------|---------|
-| `Module.cmake` | Main API: `library()`, `executable()`, and private `_module_*` helpers (glob, banner, configure, gtest). |
+| `Module.cmake` | Main API: `add_module_library()`, `add_module_executable()`, `add_module_mock()`, and private `_module_*` helpers (glob, banner, configure, gtest). |
 | `Conan.cmake` | Conan 2.x integration. Provides `find_conan_package()` wrapper. |
 | `Compiler.cmake` | Default build type, PIC, LTO, debug flags, `target_set_warnings()`. |
 | `PCH.cmake` | Precompiled headers: global auto-generated PCH and custom per-module PCH support. |
@@ -174,7 +174,7 @@ By default, `cmake --install build` deploys to the local `install/` directory (s
 - Public headers to `install/include/`
 - Runtime shared library dependencies to `install/lib/` (auto-deployed for executables)
 - Debug symbols to `.debug/` subdirectories (Debug/RelWithDebInfo builds only)
-- Use `NO_INSTALL` flag in `library()` or `executable()` to exclude a target from installation.
+- Use `NO_INSTALL` flag in `add_module_library()` or `add_module_executable()` to exclude a target from installation.
 
 For a full installation, you have to override the install location:
 
@@ -221,8 +221,8 @@ Targets are automatically assigned to components based on their type:
 
 | Component | Contents | Created by |
 |-----------|----------|------------|
-| `runtime` | Executables + runtime shared library dependencies | `executable()` |
-| `devel` | Libraries (`.a` / `.so`) and public headers | `library()` |
+| `runtime` | Executables + runtime shared library dependencies | `add_module_executable()` |
+| `devel` | Libraries (`.a` / `.so`) and public headers | `add_module_library()` |
 
 This allows installing only what you need:
 
@@ -295,24 +295,34 @@ WheelVelocities DifferentialDrive::twist_to_wheels(const Twist& twist) const {
 
 ### CMake Integration
 
-`library()` automatically discovers `mocks/` and creates a `mock_<name>` static library:
+Mock libraries are declared with the dedicated `add_module_mock()` function next
+to the production `add_module_library()` call. `add_module_mock(<name>)` builds
+a `mock_<name>` static library from sources discovered under `mocks/`:
 
 ```
-kinematics        ← production lib  (src/kinematics/*.cpp)
-mock_kinematics   ← mock bridge lib (mocks/kinematics/DifferentialDriveMock.cpp)
+kinematics        ← production lib  (src/kinematics/*.cpp)        — add_module_library(kinematics ...)
+mock_kinematics   ← mock bridge lib (mocks/kinematics/*.cpp)      — add_module_mock(kinematics ...)
 ```
 
-The mock lib exposes the `mocks/` directory as a public include root, so tests can
-`#include "kinematics/DifferentialDriveMock.h"`.
+The mock lib exposes the module root as public include directories, so tests can
+`#include "mocks/kinematics/DifferentialDriveMock.h"` (mocks) and
+`#include "kinematics/DifferentialDrive.h"` (real public headers).
 
 Executable tests use `TEST_DEPENDENCIES` to swap the real lib for the mock bridge:
 
 ```cmake
-executable(application
+add_module_executable(application
     DEPENDENCIES      robot_controller          # production build
     TEST_DEPENDENCIES mock_robot_controller     # test build uses the bridge
 )
 ```
+
+`add_module_mock()` accepts its own `PUBLIC_DEPENDENCIES`/`PRIVATE_DEPENDENCIES`
+(decoupled from the production library so the real implementation is never
+silently re-linked). Every header file discovered under `mocks/` is also
+automatically turned into a PUBLIC `-include <abs_path>` flag on the mock
+target, so any test target linking the mock picks up the mock declarations
+before the real headers at compile time — no manual list to maintain.
 
 ### Singleton Lifecycle
 
@@ -378,12 +388,12 @@ symbol) — a hard compile-time safety net. The `*Mock.h` must be kept in sync m
 
 ## 📖 API Reference
 
-### `library()`
+### `add_module_library()`
 
 Creates a library (static or shared) with automatic source discovery, compiler warnings, PCH, and unit tests.
 
 ```cmake
-library(<name>
+add_module_library(<name>
     [SHARED]
     [NO_INSTALL]
     [VERSION <version>]
@@ -433,7 +443,7 @@ library(<name>
 
 ```cmake
 # Demo layout: one CMake folder, several libs under include/<lib>/, src/<lib>/ (see robot/CMakeLists.txt)
-library(kinematics
+add_module_library(kinematics
     VERSION 0.1.0
     SUBDIRECTORIES kinematics
     PCH pch/pch.hpp
@@ -442,7 +452,7 @@ library(kinematics
 )
 
 # Library with version and temporary warning suppression
-library(database
+add_module_library(database
     VERSION 1.2.0
     PCH
         pch/pch.hpp
@@ -457,13 +467,13 @@ library(database
 )
 
 # Shared library
-library(mysharedlib
+add_module_library(mysharedlib
     SHARED
     PUBLIC_DEPENDENCIES SomeLib::SomeLib
 )
 
 # Explicit source list (no globbing) - mutually exclusive with SUBDIRECTORIES
-library(mylib
+add_module_library(mylib
     SOURCES
         src/file1.cpp
         src/file2.cpp
@@ -472,12 +482,12 @@ library(mylib
 )
 ```
 
-### `executable()`
+### `add_module_executable()`
 
 Creates an executable module with automatic source discovery, compiler warnings, PCH, and optional unit tests.
 
 ```cmake
-executable(<name>
+add_module_executable(<name>
     [NO_INSTALL]
     [VERSION <version>]
     [PCH <path>]
@@ -500,7 +510,7 @@ executable(<name>
 | `COMPILE_OPTIONS` | list | No | Extra compile flags for this target only (e.g., `-Wno-shadow`). |
 | `DEPENDENCIES` | list | No | Libraries linked with `PRIVATE` visibility. |
 | `TEST_DEPENDENCIES` | list | No | Libraries for tests (overrides `DEPENDENCIES` for mock injection). Falls back to `DEPENDENCIES` if not specified. |
-| `SUBDIRECTORIES` | list | No | Same meaning as for `library()` for `include/`, `src/`, and `tests/`. **Mutually exclusive with `SOURCES`.** |
+| `SUBDIRECTORIES` | list | No | Same meaning as for `add_module_library()` for `include/`, `src/`, and `tests/`. **Mutually exclusive with `SOURCES`.** |
 | `SOURCES` | list | No | Explicit list of source files to compile (no globbing). Headers are still discovered automatically. **Mutually exclusive with `SUBDIRECTORIES`.** |
 
 #### Automatic Behaviors
@@ -520,7 +530,7 @@ executable(<name>
 
 ```cmake
 # Demo executable (see application/CMakeLists.txt)
-executable(application
+add_module_executable(application
     VERSION 1.0.0
     PCH pch/pch.hpp
     DEPENDENCIES      robot_controller
@@ -528,11 +538,68 @@ executable(application
 )
 
 # Explicit source list (no globbing) - mutually exclusive with SUBDIRECTORIES
-executable(mytool
+add_module_executable(mytool
     SOURCES
         src/main.cpp
         src/commands.cpp
     DEPENDENCIES SomeLib::SomeLib
+)
+```
+
+### `add_module_mock()`
+
+Creates a STATIC mock library named `mock_<name>` from sources discovered under
+`mocks/`. Configured independently from `add_module_library()` so its
+dependencies and force-includes do not contaminate the production library
+(which would otherwise create duplicate symbols when the mock provides its own
+definitions of the production class methods).
+
+`add_module_mock()` is a no-op when `BUILD_TESTING` is `OFF`, so calls can be
+unconditional in module `CMakeLists.txt` files.
+
+```cmake
+add_module_mock(<name>
+    [PCH <path>]
+    [COMPILE_OPTIONS <opt1> <opt2> ...]
+    [PUBLIC_DEPENDENCIES  <dep1> <dep2> ...]
+    [PRIVATE_DEPENDENCIES <dep1> <dep2> ...]
+    [SUBDIRECTORIES <s1> [<s2> ...]]
+    [SOURCES <src1> [<src2> ...]]
+)
+```
+
+#### Arguments
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `<name>` | positional | **Yes** | Base name. The mock target is `mock_<name>` (with alias `${PROJECT_NAME}::mock_<name>`). |
+| `PCH` | single value | No | Custom PCH header for the mock target. |
+| `COMPILE_OPTIONS` | list | No | Extra compile flags applied PRIVATE to the mock target only. |
+| `PUBLIC_DEPENDENCIES` | list | No | Linked PUBLIC. Propagated to test targets that link the mock (so they can use types exposed by the mock's public headers). **Must NOT contain the production library being mocked**, otherwise duplicate symbols will appear. |
+| `PRIVATE_DEPENDENCIES` | list | No | Linked PRIVATE. Visible only while compiling the mock itself. |
+| `SUBDIRECTORIES` | list | No | Restricts mock source discovery to `mocks/<s>/`. **Mutually exclusive with `SOURCES`.** |
+| `SOURCES` | list | No | Explicit list of mock source files. **Mutually exclusive with `SUBDIRECTORIES`.** |
+
+#### Automatic Behaviors
+
+- **Source discovery**: Globs `mocks/**` (or `mocks/<s>/**` per `SUBDIRECTORIES` entry) for the configured source extensions.
+- **Header auto-shadowing**: Every header discovered under `mocks/` is added as a PUBLIC compile option `-include <abs_path>` on the mock target. The flag propagates through `INTERFACE_COMPILE_OPTIONS` to every test target that links the mock, so consumers see the mock declarations before the real headers at compile time — no manual list to maintain.
+- **GTest::gmock**: Always linked PUBLIC.
+- **Public include layout**: `${module_dir}` (so consumers can `#include "mocks/<sub>/<Name>Mock.h"`) and `${module_dir}/include` (so consumers can `#include "<sub>/<Name>.h"`).
+- **Alias target**: Creates `${PROJECT_NAME}::mock_<name>` alias.
+
+#### Examples
+
+```cmake
+# Pair a production library with its mock (see robot/CMakeLists.txt)
+add_module_library(kinematics
+    SUBDIRECTORIES kinematics
+    PUBLIC_DEPENDENCIES mp-units::mp-units
+)
+
+add_module_mock(kinematics
+    SUBDIRECTORIES kinematics
+    PUBLIC_DEPENDENCIES mp-units::mp-units
 )
 ```
 
@@ -588,7 +655,7 @@ The global PCH is compiled once and shared across all targets via CMake's `REUSE
 For modules that use heavy third-party headers (mp-units, Qt, Boost, etc.), you can specify a custom PCH:
 
 ```cmake
-library(mymodule
+add_module_library(mymodule
     PCH pch/pch.hpp
 )
 ```
