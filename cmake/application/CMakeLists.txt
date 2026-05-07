@@ -1,5 +1,5 @@
 # application - Differential-drive robot simulation
-executable(application
+add_module_executable(application
     VERSION 1.0.0
     PCH pch/pch.hpp
     DEPENDENCIES      robot_controller
