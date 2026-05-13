@@ -15,8 +15,8 @@
 # Usage:
 #   cmake -S . -B build -DBUILD_TESTING=ON
 #   ctest --test-dir build
-#   ctest --test-dir build --output-on-failure
-#   ctest --test-dir build -L unit           # Run only 'unit' labeled tests
+#   ctest --test-dir build --output-on-failure   # stdout/stderr sur échec (crash inclus)
+#   ctest --test-dir build -L unit               # Run only 'unit' labeled tests
 ###############################################################################
 
 
@@ -31,6 +31,8 @@ if(BUILD_TESTING)
     include(GoogleTest)
 
     enable_testing()
+
+    # list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
     message(STATUS "GoogleTest: Enabled")
     message(STATUS "Run tests: ctest --test-dir build")
