@@ -201,12 +201,12 @@ Réutilisez l’**identifiant court** affiché sur la ligne `• ...` (ex. `gemi
 
 En Python, vous pouvez aussi importer `print_available_gemini_models` ou `iter_gemini_models` depuis `llm_function_caller`.
 
-Le fichier **`llm_function_caller.py`** contient la bibliothèque (sans démo interactive) ; **`examples.py`** contient deux scénarios, le menu et les options CLI.
+Le fichier **`llm_function_caller.py`** contient la bibliothèque (sans démo interactive) ; **`examples.py`** contient deux scénarios métier, le choix du **job** en langage naturel via **`choose_job`** (function calling), puis les options CLI.
 
 ## Références dans le dépôt
 
 | Fichier | Rôle |
 |--------|------|
 | `llm_function_caller.py` | Voir le tableau *Décorateurs Python* : `llm_fill`, `decorator`, `wrapper`, `_build_tool_declaration`, `_declaration_to_gemini_tool`, `_run_interactive_collection`, `_find_function_call_args`, `_model_text_response`, ainsi que pour les modèles : `model_api_id`, `iter_gemini_models`, `print_available_gemini_models` |
-| `examples.py` | Scénarios (`book_visit`, `order_pizza`), menu, entrée CLI `main`, options `--list-models` / `--all` |
+| `examples.py` | `choose_job` (routage LLM), `JOBS`, `book_visit`, `order_pizza`, `main`, `--list-models` / `--all` |
 | `requirements.txt` | `google-genai` |

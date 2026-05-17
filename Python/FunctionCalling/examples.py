@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Runnable demos for ``llm_function_caller``. Run from repo root::
+Runnable examples for 'llm_function_caller'. From the repo root::
 
     cd BacASable/Python/FunctionCalling
     . .venv/bin/activate
     export GOOGLE_API_KEY=...
     python examples.py
 
-List models (after ``generate_content`` / 404 on unknown model id)::
+The first step uses 'choose_job': the model routes to one of two *jobs* (same
+'@llm_fill' / function-calling flow) based on what you say in natural language.
+
+List models (after 'generate_content' or 404 on an unknown model id)::
 
     python examples.py --list-models
     python examples.py --list-models --all
@@ -18,6 +21,13 @@ import argparse
 from llm_function_caller import ParamMeta, llm_fill, print_available_gemini_models
 
 
+# -----------------------------------------------------------------------------
+# Job: reception kiosk: collect visitor reception details.
+#
+# Tutorial: this is a typical "form fill" job. The model asks the user for each
+# required field in chat, then issues a function_call so Python receives structured
+# arguments and runs 'book_visit(...)' once. Optional fields use ParamMeta.required=False.
+# -----------------------------------------------------------------------------
 @llm_fill(
     system_prompt=(
         "You are front-desk reception. Ask short polite questions in English "
@@ -25,41 +35,48 @@ from llm_function_caller import ParamMeta, llm_fill, print_available_gemini_mode
         "the registered tool immediately once mandatory fields exist."
     ),
     param_meta={
-        "visiteur": ParamMeta(
+        "visitor": ParamMeta(
             "Full visitor name",
             examples=["Jean Dupont", "Marie Curie"],
         ),
-        "hote": ParamMeta(
+        "host": ParamMeta(
             "Employee/host they are meeting",
             examples=["Mr Martin", "Dr Bernard"],
         ),
-        "heure": ParamMeta(
+        "time": ParamMeta(
             "Appointment time HH:MM",
             examples=["09:00", "14:30"],
         ),
-        "objet": ParamMeta(
+        "subject": ParamMeta(
             "Reason/subject",
             required=False,
         ),
     },
 )
 def book_visit(
-    visiteur: str, hote: str, heure: str, objet: str = "unspecified"
+    visitor: str, host: str, time: str, subject: str = "unspecified"
 ) -> dict:
-    """Register visitor appointment in reception system."""
+    """Register a visitor appointment in the reception system."""
     print("\nRegistered visit:")
-    print(f"   Visitor   : {visiteur}")
-    print(f"   Host      : {hote}")
-    print(f"   Time      : {heure}")
-    print(f"   Subject   : {objet}")
-    return {"visiteur": visiteur, "hote": hote, "heure": heure, "objet": objet}
+    print(f"   Visitor   : {visitor}")
+    print(f"   Host      : {host}")
+    print(f"   Time      : {time}")
+    print(f"   Subject   : {subject}")
+    return {"visitor": visitor, "host": host, "time": time, "subject": subject}
 
 
+# -----------------------------------------------------------------------------
+# Job: pizza order: collect delivery details for a fake pizzeria.
+#
+# Tutorial: 'enum' on ParamMeta constrains the model to allowed pizza names and
+# sizes (JSON Schema enums). The job ends when the tool call supplies all required
+# fields; Python then prints a confirmation in 'order_pizza'.
+# -----------------------------------------------------------------------------
 @llm_fill(
     system_prompt=(
         "You assist a fictional pizzeria. Collect pizza order details amiably "
-        "(French or English replies are fine). Call the declared tool once you "
-        "have everything."
+        "(French or English replies from the user are fine). Call the declared "
+        "tool once you have everything."
     ),
     param_meta={
         "client": ParamMeta("Customer first name"),
@@ -67,28 +84,62 @@ def book_visit(
             "Ordered pizza variant",
             enum=["Margherita", "Regina", "4 fromages", "Calzone"],
         ),
-        "taille": ParamMeta("Box size", enum=["S", "M", "L", "XL"]),
-        "adresse": ParamMeta("Full street address"),
+        "size": ParamMeta("Box size", enum=["S", "M", "L", "XL"]),
+        "address": ParamMeta("Full street address"),
     },
 )
-def order_pizza(client: str, pizza: str, taille: str, adresse: str) -> dict:
-    """Finalize delivery pizza order."""
+def order_pizza(client: str, pizza: str, size: str, address: str) -> dict:
+    """Finalize a delivery pizza order."""
     print("\nPizza confirmed:")
     print(f"   Client    : {client}")
-    print(f"   Pie       : {pizza} ({taille})")
-    print(f"   Address   : {adresse}")
-    return {"client": client, "pizza": pizza, "taille": taille, "adresse": adresse}
+    print(f"   Pie       : {pizza} ({size})")
+    print(f"   Address   : {address}")
+    return {"client": client, "pizza": pizza, "size": size, "address": address}
 
 
-EXAMPLES = {
-    "1": book_visit,
-    "2": order_pizza,
+# -----------------------------------------------------------------------------
+# Job: router: decide which runnable job to start next.
+#
+# Tutorial: same decorator pattern, but the tool has a single enum argument 'job'.
+# The model maps free-form user intent ("I want the kiosk", "pizza please") to
+# 'reception' or 'pizza'. 'main' then calls 'book_visit' or 'order_pizza',
+# each of which may run its *own* LLM collection loop—two stacked jobs, two tools.
+# -----------------------------------------------------------------------------
+@llm_fill(
+    system_prompt=(
+        "You route the user to one of two interactive jobs. From natural language "
+        "(English or French) determine intent: reception / front desk / visitor "
+        "appointment ==> job=reception; pizzeria / pizza order ==> job=pizza. "
+        "Call the tool as soon as intent is clear; ask at most one short clarifying "
+        "question if ambiguous."
+    ),
+    param_meta={
+        "job": ParamMeta(
+            "Which job to run next",
+            enum=["reception", "pizza"],
+            examples=["run the reception kiosk", "I want to order a pizza"],
+        ),
+    },
+)
+def choose_job(job: str) -> str:
+    """Pick the runnable job via function calling from the user's stated intent."""
+    return job
+
+# -----------------------------------------------------------------------------
+# Maps tool output 'job' ==> the decorated function that performs that
+# job's conversation.
+# -----------------------------------------------------------------------------
+JOBS = {
+    "reception": book_visit,
+    "pizza": order_pizza,
 }
 
-
+# -----------------------------------------------------------------------------
+# Main function
+# -----------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Interactive @llm_fill demos (Gemini function calling).",
+        description="Interactive @llm_fill examples (Gemini function calling).",
     )
     parser.add_argument(
         "--list-models",
@@ -110,12 +161,12 @@ def main() -> None:
         print_available_gemini_models(only_generate_content=not args.list_all)
         return
 
-    print("Choose a demo:")
-    print("  1 – Reception kiosk")
-    print("  2 – Pizza order")
-    choice = input("Pick 1 / 2: ").strip()
-
-    EXAMPLES.get(choice, book_visit)()
+    print(
+        "Tell the assistant which job you want: reception kiosk or pizza order.\n"
+    )
+    selected = choose_job()
+    run = JOBS.get(selected, book_visit)
+    run()
 
 
 if __name__ == "__main__":
