@@ -1,0 +1,6 @@
+# Instructor — extraction structurée Pydantic (multi-provider)
+instructor[google-genai]>=1.0.0
+
+# SDK Mistral AI (provider mistral/...)
+# Instructor 1.x requiert mistralai<2 (import `from mistralai import Mistral`)
+mistralai>=1.5.1,<2.0.0
