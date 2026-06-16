@@ -37,6 +37,11 @@ class BusinessOutcome:
     visitor_message: str
     staff_requested: bool = False
     staff_brief: str = ""
+    notify_host: bool = False
+    host_name: str = ""
+    visitor_name: str = ""
+    appointment_at: Optional[datetime] = None
+    appointment_subject: str = ""
 
 
 def _today_at(
@@ -520,7 +525,16 @@ def execute_business_action(
                         f"but nothing matches in the calendar."
                     ),
                 )
-            return BusinessOutcome(visitor_message=msg)
+            slot = appt.starts_at if appt else when
+            kind = _arrival_kind(slot, clock)
+            return BusinessOutcome(
+                visitor_message=msg,
+                notify_host=kind == "imminent",
+                host_name=(appt.host if appt else host) or "",
+                visitor_name=visitor or "",
+                appointment_at=slot,
+                appointment_subject=(appt.subject if appt else "") or "",
+            )
 
         name = visitor or "there"
         return BusinessOutcome(

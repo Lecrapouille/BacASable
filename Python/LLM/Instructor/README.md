@@ -72,6 +72,33 @@ With `--simulate-staff`:
 python examples.py --simulate-staff --phrase "Hello, I'm Robert Foo, here to check in."
 ```
 
+## Discord (pager + alerte hôte)
+
+When the desk pages reception **or** a visitor checks in on an **imminent** slot, alerts go to `#alertes-guichet` via [DiscordGuichet](../DiscordGuichet/).
+
+Setup once:
+
+```bash
+# ../DiscordGuichet/.env — DISCORD_BOT_TOKEN, DISCORD_ALERT_CHANNEL_ID, HOST_DISCORD_MAP
+pip install -r requirements.txt   # includes python-dotenv
+```
+
+| Event | Discord message |
+|-------|-----------------|
+| `staff_requested` | **Pager guichet** + `staff_brief` |
+| Check-in imminent (±20 min) | **Visiteur arrivé** → @mention hôte |
+
+Discord is **on automatically** when `DiscordGuichet/.env` is valid. Flags:
+
+```bash
+python examples.py --phrase "Hi, I'm Thomas Martin..."              # auto
+python examples.py --discord --phrase "Hello, I'm Robert Foo..."    # force on
+python examples.py --no-discord --phrase "..."                      # force off
+python examples.py --now "2026-06-16 20:05" --phrase "Hi, I'm Thomas Martin..."
+```
+
+Map agenda hosts to Discord user IDs in `.env`, e.g. `HOST_DISCORD_MAP=Julie=123456789`.
+
 ## CLI
 
 ```bash
@@ -80,6 +107,7 @@ python examples.py --phrase "Hi, I'm Thomas Martin..."      # single phrase
 python examples.py --model mistral/mistral-small-latest
 python examples.py --now "2026-06-16 21:30" --phrase "..."  # simulated clock
 python examples.py --simulate-staff --phrase "..."          # staff pager demo
+python examples.py --phrase "..."                           # Discord auto if .env set
 ```
 
 `--now` affects:
@@ -142,8 +170,9 @@ python examples.py --model mistral/mistral-small-latest
 |------|------|
 | `guichet_router.py` | `FrontDeskDecision`, LLM call, dispatch |
 | `agenda_db.py` | In-memory appointments + resolution strategies + `BusinessOutcome` |
+| `discord_bridge.py` | Instructor → DiscordGuichet (auto-detect `.env`) |
 | `staff_sim.py` | Async staff pager simulation (3–5 s + LLM) |
-| `examples.py` | Demo scenarios + CLI (`--now`, `--simulate-staff`) |
+| `examples.py` | Demo scenarios + CLI (`--now`, `--simulate-staff`, `--discord`) |
 | `requirements.txt` | `instructor[google-genai]`, `mistralai<2` |
 
 ## Flow
@@ -157,6 +186,8 @@ flowchart LR
   S -->|no| B[execute_business_action]
   C --> B
   B --> V[Desk → Visitor]
+  B -.->|staff_requested or imminent check-in| D[DiscordGuichet]
+  D --> H[@employé sur Discord]
   B -.->|staff_requested + --simulate-staff| P[staff_sim async 3–5s]
   P --> V2[Desk → Visitor follow-up]
 ```

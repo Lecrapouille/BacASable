@@ -6,3 +6,4 @@ Sous-projets expérimentaux autour des modèles de langage.
 |---------|-------------|
 | [StructuredDataExtraction](StructuredDataExtraction/) | Extraction de données structurées depuis une conversation (décorateur `@llm_fill`, Gemini function calling) |
 | [Instructor](Instructor/) | One-shot front-desk routing via flat Pydantic schema (Instructor, all providers) |
+| [DiscordGuichet](DiscordGuichet/) | Pager Discord pour alerter les employés quand le guichet escalade |

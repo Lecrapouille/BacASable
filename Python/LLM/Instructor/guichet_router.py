@@ -2,12 +2,12 @@
 Front-desk routing via Instructor
 =================================
 
-One-shot flow: the LLM fills a flat Pydantic model, then Python dispatches rigidly
-(your code runs the business logic — not the model).
+The LLM reads what the visitor says and fills out a form in one go.
+Then Python checks the calendar and replies. The LLM does not run the app.
 
-We use a **flat schema for every provider** (Gemini, Mistral, Groq…). Pydantic
-Unions are avoided: Gemini rejects them, and Mistral often raises validation
-errors with discriminated unions in practice.
+We use the same flat schema for all providers (Gemini, Mistral, Groq, etc.).
+We avoid Pydantic Unions. Gemini does not support them. Mistral often fails
+with them too.
 """
 
 from __future__ import annotations
@@ -20,14 +20,14 @@ from pydantic import BaseModel, Field
 
 
 # -----------------------------------------------------------------------------
-# LLM response model — flat schema, all providers
+# What the LLM returns (one form, all providers)
 # -----------------------------------------------------------------------------
 
 
 class FrontDeskDecision(BaseModel):
-    """Single flat schema passed to Instructor as ``response_model``.
+    """The form the LLM fills in. Same boxes every time.
 
-    Fill only the fields relevant to ``intent``. Leave others as None.
+    ``intent`` says which case it is. Unused boxes stay ``None``.
     """
 
     intent: Literal[
@@ -37,14 +37,15 @@ class FrontDeskDecision(BaseModel):
         "general_inquiry",
     ] = Field(
         description=(
-            "Main visitor intent. "
-            "check_in = arriving for an EXISTING appointment "
-            "('check in', 'I'm here for my appointment'). "
-            "book_appointment = schedule a NEW visit."
+            "What the visitor wants. Pick exactly one:\n"
+            "- check_in: they already have a visit and are arriving or confirming it.\n"
+            "- book_appointment: they want to schedule a new visit.\n"
+            "- cancel_appointment: they want to cancel an existing visit.\n"
+            "- general_inquiry: anything else (directions, restrooms, small talk)."
         )
     )
     visitor_name: Optional[str] = Field(
-        None, description="Full visitor name (check_in / book / cancel flows)."
+        None, description="Full visitor name (check_in / book appointment / cancel appointment)."
     )
     host_name: Optional[str] = Field(
         None,
@@ -72,7 +73,6 @@ class FrontDeskDecision(BaseModel):
             "Must be a complete sentence."
         ),
     )
-
     needs_app_assistance: bool = Field(
         False,
         description=(
@@ -89,23 +89,58 @@ class FrontDeskDecision(BaseModel):
     )
 
 
+# -----------------------------------------------------------------------------
+# LLM client
+# -----------------------------------------------------------------------------
+
+# Default model (Google AI Studio, free tier).
 DEFAULT_MODEL = "google/gemini-2.5-flash"
 
 
-def make_client(*, model: str = DEFAULT_MODEL):
-    """Build an Instructor client (provider inferred from ``provider/model``)."""
+def make_llm_client(*, model: str = DEFAULT_MODEL):
+    """Connect to the LLM.
+
+    Args:
+        model: Provider and model name, e.g. ``google/gemini-2.5-flash``.
+    """
     return instructor.from_provider(model)
 
 
+# -----------------------------------------------------------------------------
+# Clock
+# -----------------------------------------------------------------------------
+
 def time_context(now: Optional[datetime] = None) -> tuple[str, str]:
-    """Return (human-readable, iso8601) for relative-time resolution."""
+    """Build the date/time text sent to the LLM.
+
+    Args:
+        now: Fake "current" time for demos (given on the command line with ``--now``),
+            else, uses real time if ``now`` is omitted.
+
+    Returns:
+        A readable line ("Today is…") and a fixed timestamp for "now".
+    """
     dt = now or datetime.now().astimezone()
     human = f"Today is {dt.strftime('%A %d %B %Y')}, current time is {dt.strftime('%H:%M')}."
     iso = dt.replace(microsecond=0).isoformat()
     return human, iso
 
 
-def _system_prompt(ctx_human: str, now_iso: str) -> str:
+# -----------------------------------------------------------------------------
+# Prompt and single LLM call
+# -----------------------------------------------------------------------------
+
+
+def system_prompt(ctx_human: str, now_iso: str) -> str:
+    """Rules we send to the LLM before it fills the form.
+
+    Args:
+        ctx_human: Readable date/time line shown to the LLM ("Today is Monday…").
+        now_iso: Fixed timestamp the LLM must use for "now" and relative times.
+
+    Pick one intent. Turn "now" / "tomorrow" into a real time.
+    If the visitor forgot something, leave the box blank and flag the app.
+    """
     return (
         "You are a front-desk routing brain. Analyze the visitor's sentence "
         "and fill the FrontDeskDecision schema.\n\n"
@@ -118,7 +153,8 @@ def _system_prompt(ctx_human: str, now_iso: str) -> str:
         "If they only want to CONFIRM a future slot (e.g. 'tomorrow at 2pm'), "
         "still use check_in — the app will reply accordingly.\n"
         "   - book_appointment: visitor wants to SCHEDULE a new visit.\n"
-        "   - cancel_appointment / general_inquiry.\n"
+        "   - cancel_appointment: visitor wants to cancel an existing visit.\n"
+        "   - general_inquiry: anything else (directions, restrooms, small talk).\n"
         "2. TIME RESOLUTION — convert relative phrases to appointment_at ISO 8601:\n"
         "   - 'now', 'right away' → now_iso\n"
         "   - 'tomorrow 2pm' → tomorrow at 14:00 local\n"
@@ -136,47 +172,92 @@ def _system_prompt(ctx_human: str, now_iso: str) -> str:
 def analyze_visitor_phrase(
     phrase: str,
     *,
-    client=None,
-    model: str = DEFAULT_MODEL,
+    llm_client=None,
+    llm_model: str = DEFAULT_MODEL,
     now: Optional[datetime] = None,
 ) -> FrontDeskDecision:
-    """Free-text visitor phrase → validated FrontDeskDecision."""
-    c = client or make_client(model=model)
+    """Turn the visitor's words into a filled ``FrontDeskDecision`` form.
+
+    One LLM call only.
+
+    Args:
+        phrase: What the visitor said at the desk.
+        llm_client: Instructor client. Built from ``model`` if not passed.
+        llm_model: LLM to use when ``client`` is not passed.
+        now: Fake (CLI ``--now``) or actual current time. Help to convert "now", "tomorrow", etc. to datetime.
+
+    Returns:
+        The filled ``FrontDeskDecision`` form.
+    """
+    client = llm_client or make_llm_client(model=llm_model)
     ctx_human, now_iso = time_context(now)
 
-    return c.create(
+    return client.create(
         response_model=FrontDeskDecision,
         messages=[
-            {"role": "system", "content": _system_prompt(ctx_human, now_iso)},
+            {"role": "system", "content": system_prompt(ctx_human, now_iso)},
             {"role": "user", "content": phrase},
         ],
     )
 
 
+# -----------------------------------------------------------------------------
+# Full flow: LLM → calendar → reply (optional staff call)
+# -----------------------------------------------------------------------------
+
+
 def handle_visitor_phrase(
     phrase: str,
     *,
-    client=None,
-    model: str = DEFAULT_MODEL,
+    llm_client=None,
+    llm_model: str = DEFAULT_MODEL,
     now: Optional[datetime] = None,
     simulate_staff: bool = False,
+    discord: Optional[bool] = None,
+    discord_staff: Optional[bool] = None,
 ) -> Optional[FrontDeskDecision]:
-    """Analyze, run business logic, speak to the visitor."""
+    """Run the full demo and print each step.
+
+    Args:
+        phrase: What the visitor said at the desk.
+        llm_client: Instructor client. Built from ``llm_model`` if not passed.
+        llm_model: LLM to use when ``llm_model`` is not passed.
+        now: Fake (CLI ``--now``) or actual current time. Help to convert "now", "tomorrow", etc. to datetime.
+        simulate_staff: If True and reception is needed, wait 3–5 s and LLM-simulate
+            whether someone comes (CLI ``--simulate-staff``).
+        discord: ``True`` / ``False`` / ``None`` (auto: on when ``DiscordGuichet/.env``
+            is configured). ``discord_staff`` is a deprecated alias for ``discord=True``.
+
+    Steps:
+    1. Ask the LLM to fill the form
+    2. Show what was extracted
+    3. Look up the calendar if needed
+    4. Run check-in / book / cancel / reply
+    5. Optionally fake a call to reception
+
+    Returns:
+        The LLM form, or ``None`` on error.
+    """
     ctx_human, _ = time_context(now)
 
+    # --- What the visitor said, and what time we pretend it is ---
     print(f"\n[Visitor] {phrase!r}")
     print(f"[Context] {ctx_human}")
     print("-" * 50)
 
+    # --- Step 1: ask the LLM ---
     try:
         decision = analyze_visitor_phrase(
-            phrase, client=client, model=model, now=now
+            phrase,
+            llm_client=llm_client,
+            llm_model=llm_model,
+            now=now
         )
     except Exception as exc:
         print(f"[Error] {exc}")
         return None
 
-    # Staff-facing summary (structured fields extracted by the LLM).
+    # --- Step 2: show extracted fields (not raw JSON) ---
     print("[Staff] Extracted intent and fields:")
     print(f"   intent         : {decision.intent}")
     print(f"   visitor_name   : {decision.visitor_name or '(not set)'}")
@@ -189,8 +270,10 @@ def handle_visitor_phrase(
     if decision.direct_reply:
         print(f"   direct_reply   : {decision.direct_reply}")
 
+    # Import here so agenda_db and this file do not import each other at load time.
     from agenda_db import apply_strategies, execute_business_action, needs_strategy_resolution
 
+    # --- Step 3: search the calendar (forgot host, time, cancel, etc.) ---
     strategy_result = None
     if needs_strategy_resolution(decision):
         print("[Escalate] Calendar lookup")
@@ -200,15 +283,28 @@ def handle_visitor_phrase(
         for line in strategy_result.log:
             print(f"   • {line}")
 
+    # --- Step 4: check-in, book, cancel, or answer the question ---
     outcome = execute_business_action(decision, strategy_result, now=now)
     if outcome.visitor_message:
         print(f"\n[Desk → Visitor] {outcome.visitor_message}")
 
+    # --- Step 5: Discord alerts and/or LLM staff simulation ---
+    from discord_bridge import dispatch_discord_notifications, resolve_discord_enabled
+
+    discord_flag = discord if discord is not None else discord_staff
+    if resolve_discord_enabled(cli_flag=discord_flag):
+        dispatch_discord_notifications(
+            outcome,
+            decision,
+            strategy_result,
+            enabled=True,
+        )
+
     if simulate_staff and outcome.staff_requested and outcome.staff_brief:
         from staff_sim import run_staff_simulation
 
-        c = client or make_client(model=model)
-        staff = run_staff_simulation(outcome.staff_brief, client=c)
+        client = llm_client or make_llm_client(model=llm_model)
+        staff = run_staff_simulation(outcome.staff_brief, client=client)
         if staff:
             tag = "arrived" if staff.staff_arrived else "no-show"
             print(f"[Staff] Simulation ({tag})")

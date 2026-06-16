@@ -13,6 +13,8 @@ Front-desk demo with Instructor (flat schema, all providers).
     python examples.py --model mistral/mistral-small-latest
     python examples.py --now "2026-06-16 21:30" --phrase "Hi, I'm Thomas Martin..."
     python examples.py --simulate-staff --phrase "Hello, I'm Robert Foo, here to check in."
+    python examples.py --phrase "Hi, I'm Thomas Martin..."   # Discord auto if .env set
+    python examples.py --no-discord --phrase "..."
 
 Free-tier providers:
     --model google/gemini-2.5-flash
@@ -26,7 +28,7 @@ import argparse
 import sys
 from datetime import datetime
 
-from guichet_router import DEFAULT_MODEL, handle_visitor_phrase, make_client
+from guichet_router import DEFAULT_MODEL, handle_visitor_phrase, make_llm_client
 from agenda_db import reset_calendar
 
 DEMO_PHRASES = [
@@ -115,12 +117,32 @@ def main() -> int:
         action="store_true",
         help="When desk pages reception, wait 3–5 s and LLM-simulate staff arrival.",
     )
+    discord_group = parser.add_mutually_exclusive_group()
+    discord_group.add_argument(
+        "--discord",
+        "--discord-staff",
+        action="store_true",
+        dest="discord",
+        help="Force Discord alerts (pager + check-in). Default: on if DiscordGuichet/.env exists.",
+    )
+    discord_group.add_argument(
+        "--no-discord",
+        action="store_true",
+        help="Disable Discord even when DiscordGuichet/.env is configured.",
+    )
     args = parser.parse_args()
+
+    if args.no_discord:
+        discord_flag = False
+    elif args.discord:
+        discord_flag = True
+    else:
+        discord_flag = None
 
     reset_calendar(now=args.now)
 
     try:
-        client = make_client(model=args.model)
+        client = make_llm_client(model=args.model)
     except Exception as exc:
         print(f"[Error] {exc}", file=sys.stderr)
         return 1
@@ -135,10 +157,11 @@ def main() -> int:
         print(f"\n{'=' * 60}\n{title}\n{'=' * 60}")
         handle_visitor_phrase(
             phrase,
-            client=client,
-            model=args.model,
+            llm_client=client,
+            llm_model=args.model,
             now=args.now,
             simulate_staff=args.simulate_staff,
+            discord=discord_flag,
         )
 
     return 0
