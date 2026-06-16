@@ -1,6 +1,6 @@
-# LLM Function Calling en Python avec Gemini
+# Extraction de données structurées via LLM (Gemini)
 
-Ce petit projet montre comment lier une **fonction Python** réelle avec le **function calling** d’un LLM via un **décorateur**.
+Ce petit projet montre comment **extraire des données structurées** depuis une conversation en langage naturel, via le **function calling** d’un LLM et un **décorateur** Python.
 
 ## Concepts
 
@@ -11,7 +11,7 @@ Un modèle capable de *function calling* peut, en plus du texte, émettre un **a
 - **À quoi ça sert ?** À ce que le modèle prépare une action pour votre code (formulaire dynamique, commande métier, requête API) sans que vous parliez tout en prompt libre puis ne parsiez à la main.
 - **Flux ici** : Gemini reçoit la description d’un outil (`FunctionDeclaration`). Il peut soit poser des questions à l’utilisateur en langage naturel, soit décider que les infos sont complètes et **appeler l’outil** avec des `args`.
 
-Le fichier `llm_function_caller.py` désactive l’appel automatique du SDK : votre Python **lit** ces `args` et appelle la fonction métier sous-jacente (contrôle total côté app).
+Le fichier `llm_structured_fill.py` désactive l’appel automatique du SDK : votre Python **lit** ces `args` et appelle la fonction métier sous-jacente (contrôle total côté app).
 
 ### Décorateurs Python
 
@@ -25,7 +25,7 @@ def ma_fonction(x: str) -> dict:
 
 Python exécute l’équivalent de : `ma_fonction = llm_fill(...)(ma_fonction)`.
 
-Dans **`llm_function_caller.py`**, la chaîne d’appels est :
+Dans **`llm_structured_fill.py`**, la chaîne d’appels est :
 
 | Nom dans le code | Rôle |
 |------------------|------|
@@ -58,7 +58,7 @@ flowchart LR
   subgraph Terminal
     U[(Utilisateur)]
   end
-  subgraph Code_Python["llm_function_caller"]
+  subgraph Code_Python["llm_structured_fill"]
     W["wrapper\nremplace le nom public\nex. book_visit"]
     GAPI["genai.Client()\nmodels.generate_content"]
     F["func — définition sous le décorateur"]
@@ -174,7 +174,7 @@ export GOOGLE_API_KEY="votre clé"
 ## Installation et exécution
 
 ```bash
-cd BacASable/Python/FunctionCalling
+cd BacASable/Python/LLM/StructuredDataExtraction
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
@@ -199,14 +199,14 @@ python examples.py --list-models --all
 
 Réutilisez l’**identifiant court** affiché sur la ligne `• ...` (ex. `gemini-2.5-flash`) dans `@llm_fill(model="...")`.
 
-En Python, vous pouvez aussi importer `print_available_gemini_models` ou `iter_gemini_models` depuis `llm_function_caller`.
+En Python, vous pouvez aussi importer `print_available_gemini_models` ou `iter_gemini_models` depuis `llm_structured_fill`.
 
-Le fichier **`llm_function_caller.py`** contient la bibliothèque (sans démo interactive) ; **`examples.py`** contient deux scénarios métier, le choix du **job** en langage naturel via **`choose_job`** (function calling), puis les options CLI.
+Le fichier **`llm_structured_fill.py`** contient la bibliothèque (sans démo interactive) ; **`examples.py`** contient deux scénarios métier, le choix du **job** en langage naturel via **`choose_job`** (function calling), puis les options CLI.
 
 ## Références dans le dépôt
 
 | Fichier | Rôle |
 |--------|------|
-| `llm_function_caller.py` | Voir le tableau *Décorateurs Python* : `llm_fill`, `decorator`, `wrapper`, `_build_tool_declaration`, `_declaration_to_gemini_tool`, `_run_interactive_collection`, `_find_function_call_args`, `_model_text_response`, ainsi que pour les modèles : `model_api_id`, `iter_gemini_models`, `print_available_gemini_models` |
+| `llm_structured_fill.py` | Voir le tableau *Décorateurs Python* : `llm_fill`, `decorator`, `wrapper`, `_build_tool_declaration`, `_declaration_to_gemini_tool`, `_run_interactive_collection`, `_find_function_call_args`, `_model_text_response`, ainsi que pour les modèles : `model_api_id`, `iter_gemini_models`, `print_available_gemini_models` |
 | `examples.py` | `choose_job` (routage LLM), `JOBS`, `book_visit`, `order_pizza`, `main`, `--list-models` / `--all` |
 | `requirements.txt` | `google-genai` |

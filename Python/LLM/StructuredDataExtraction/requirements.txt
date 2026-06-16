@@ -1,0 +1,2 @@
+# SDK Google Gen AI (Gemini — function calling / structured extraction)
+google-genai>=1.0.0

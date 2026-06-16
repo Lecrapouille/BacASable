@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Runnable examples for 'llm_function_caller'. From the repo root::
+Runnable examples for 'llm_structured_fill'. From the repo root::
 
-    cd BacASable/Python/FunctionCalling
+    cd BacASable/Python/LLM/StructuredDataExtraction
     . .venv/bin/activate
     export GOOGLE_API_KEY=...
     python examples.py
@@ -18,7 +18,7 @@ List models (after 'generate_content' or 404 on an unknown model id)::
 
 import argparse
 
-from llm_function_caller import ParamMeta, llm_fill, print_available_gemini_models
+from llm_structured_fill import ParamMeta, llm_fill, print_available_gemini_models
 
 
 # -----------------------------------------------------------------------------

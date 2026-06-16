@@ -1,11 +1,11 @@
 """
-Generic LLM function caller (Google Gemini)
-===========================================
+Structured data extraction via LLM (Google Gemini)
+====================================================
 
-Uses **function calling** (sometimes called “tool use”): you declare one
-tool whose shape mirrors a Python function. The model either asks the user follow-up
-questions in natural language or emits a structured function call payload with
-argument values extracted from the conversation.
+Uses **function calling** (sometimes called “tool use”) as the mechanism: you
+declare one tool whose shape mirrors a Python function. The model either asks
+the user follow-up questions in natural language or emits a structured payload
+with argument values extracted from the conversation.
 
 Tutorial mental model:
 

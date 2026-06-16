@@ -1,2 +1,0 @@
-# SDK Google Gen AI (Gemini, function calling)
-google-genai>=1.0.0
